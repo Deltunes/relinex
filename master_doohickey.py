@@ -22,8 +22,12 @@ else:
 #rnxFilename, azimelevFilename, conv, quit = UBXtoRNX(i, waitTime=waitTime, epochInterval=epochInterval)
 
 while not quit:
-    rnxFilename, azimelevFilename, conv, quit = UBXtoRNX(conv, i, waitTime=waitTime, epochInterval=epochInterval)
-    i += 1
+	rnxFilename = ["",""]
+	azimelevFilename = ["",""]
+	rnxFilename[0], azimelevFilename[0], conv, quit = UBXtoRNX(conv, i, waitTime=waitTime, epochInterval=epochInterval)
+	i += 1
+	rnxFilename[1], azimelevFilename[1], conv, quit = UBXtoRNX(conv, i, waitTime=waitTime, epochInterval=epochInterval)
+	i += 1
 
-    RNXtoIMG(rnxFilename, azimelevFilename)
-    
+	RNXtoIMG(rnxFilename, azimelevFilename)
+	

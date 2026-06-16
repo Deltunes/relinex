@@ -16,25 +16,32 @@ def readFileDate():
 	return fileDatetime
 
 def RNXtoIMG(rnxFilename, azimelevFilename):
-	pattern = {'rnxfile1':f'{rnxFilename}',
-			  'fodder%':'RNX_SUCCESS/rinex/fodder%.rnx'}
+	pattern = {'rnxfile1':f'{rnxFilename[0]}',
+			  'rnxfile2':f'{rnxFilename[1]}'}
+	#pattern = {'rnxfile1':f'{rnxFilename}',
+	#		  'fodder%':'RNX_SUCCESS/rinex/fodder%.rnx'}
 
 	outputdir = {'rnxfile1':'GNSSVOD/nc/',
-				'fodder%':'GNSSVOD/nc/'}
+				'rnxfile2':'GNSSVOD/nc/'}
+	#outputdir = {'rnxfile1':'GNSSVOD/nc/',
+	#			'fodder%':'GNSSVOD/nc/'}
 
 	keepvars = ['S?','S??']
 
 	result = gv.preprocess(pattern, interval='1s', keepvars=keepvars, outputdir=outputdir, overwrite=True)
 
 	pattern={'rnxfile1':'GNSSVOD/nc/success1.nc', 
-			'fodder%':'GNSSVOD/nc/fodder%.nc'}
+			'rnxfile2':'GNSSVOD/nc/success2.nc'}
+	#pattern={'rnxfile1':'GNSSVOD/nc/success1.nc', 
+	#		'fodder%':'GNSSVOD/nc/fodder%.nc'}
 
 	# get time range
 	startday = pd.to_datetime(readFileDate())
 	timeintervals=pd.interval_range(start=startday, periods=2, freq='D', closed='left')
 
 	# define how to make pairs, always give reference station first, matching the dictionary keys of 'pattern'
-	pairings={'gnssvod_test':('rnxfile1','fodder%')}
+	pairings={'gnssvod_test':('rnxfile1','rnxfile2')}
+	#pairings={'gnssvod_test':('rnxfile1','fodder%')}
 
 	# define where to save output data, matching the dictionary keys in 'pairings'
 	outputdir = {'gnssvod_test':'GNSSVOD/nc2/'}
