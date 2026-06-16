@@ -111,3 +111,4 @@ def RNXtoIMG(rnxFilename, azimelevFilename):
 
 	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05, label='SNR (L1)')
 	plt.savefig('IMAGE_SUCCESS/plot_oneSite_hemi.png',facecolor='white',transparent=False,bbox_inches='tight')
+	plt.close()
