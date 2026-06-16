@@ -29,5 +29,8 @@ while not quit:
 	rnxFilename[1], azimelevFilename[1], conv, quit = UBXtoRNX(conv, i, waitTime=waitTime, epochInterval=epochInterval)
 	i += 1
 
+	print(rnxFilename[1])
+	
+
 	RNXtoIMG(rnxFilename, azimelevFilename)
 	
