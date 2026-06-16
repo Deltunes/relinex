@@ -123,22 +123,20 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 	azimElevFile = open(azimElevFilename, "w", encoding="utf-8")
 	azimElevFile.write(correctedAzimElev)
 
-def UBXtoRNX(waitTime=60, epochInterval=10):
+def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
 	stream = Serial(COMPORT, 9600, timeout=10)
 	ubr = UBXReader(stream)
 		
 	print(f"RINEX FILE LENGTH: {waitTime} second(s)")
 	print(f"EPOCH INTERVAL: {epochInterval} second(s)")
 
-	i = 0
 	try:
-		while True:
-		#if True:
-			i += 1
+		#while True:
+		if True:
+			i = fileno
 			print(f"RNX FILE: {i}")
 			
 			currEpoch = EPOCHMIN
-			conv = mkconv()
 			rnxFilename = f"./UBXtoRNX/RNX_SUCCESS/success{i}.rnx"
 			azimelevFilename = f"./UBXtoRNX/RNX_SUCCESS/azimuth&elevation{i}.txt"
 			conv._outputs[OBS]["fnm"] = rnxFilename
@@ -204,6 +202,10 @@ def UBXtoRNX(waitTime=60, epochInterval=10):
 			correctAzimElev(rnxFilename, azimelevFilename)
 			#subprocess.run(["sudo", "shutdown", "-h", "now"])
 
+			print()
+			quit = False
+			return rnxFilename, azimelevFilename, conv, quit
+
 	except KeyboardInterrupt:
 		if (conv._outputs[OBS]["stm"].closed == False):
 			conv.process_output_data(["O"])
@@ -216,10 +218,7 @@ def UBXtoRNX(waitTime=60, epochInterval=10):
 			currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
 			azimelevFile.close()
 			correctAzimElev(rnxFilename, azimelevFilename)
-
-if len(sys.argv) > 2:
-	UBXtoRNX(int(sys.argv[1]),int(sys.argv[2]))
-elif len(sys.argv) > 1:
-	UBXtoRNX(int(sys.argv[1]))
-else:
-	UBXtoRNX()
+		
+		print()
+		quit = True
+		return rnxFilename, azimelevFilename, conv, quit
