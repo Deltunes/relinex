@@ -1,0 +1,69 @@
+deltunes@Fyberdeck:~/leaflink $ python3 master_doohickey.py 20 5
+RINEX FILE LENGTH: 20 second(s)
+EPOCH INTERVAL: 5 second(s)
+RNX FILE: 1
+		00		
+Created a temporary directory at /tmp/tmp3kor4elh
+Could not find any files matching the pattern RNX_SUCCESS/rinex/success2.rnx
+RNX_SUCCESS/rinex/success1.rnx exists | Reading...
+Observation file  RNX_SUCCESS/rinex/success1.rnx  is read in 0.06 seconds.
+Processing 80 individual observations
+Calculating Azimuth and Elevation
+Saved 80 individual observations in GNSSVOD/nc/success1.nc
+Removed the temporary directory at /tmp/tmp3kor4elh
+Could not find any files matching the pattern GNSSVOD/nc/success2.nc
+Extracting Epochs from files
+----- Processing gnssvod_test
+-- Processing interval [2026-06-16 17:24:07, 2026-06-17 17:24:07)
+Found 1 file(s) for rnxfile1
+Reading
+Found 0 file(s) for rnxfile2
+No data for station rnxfile2.
+Concatenating stations
+Saving result in GNSSVOD/nc2/
+Traceback (most recent call last):
+  File "/home/deltunes/leaflink/master_doohickey.py", line 28, in <module>
+    RNXtoIMG(rnxFilename, azimelevFilename)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deltunes/leaflink/GNSSVOD/const_gnssvod_oneSite.py", line 46, in RNXtoIMG
+    out = gv.gather_stations(pattern,pairings,timeintervals,keepvars=keepvars,outputdir=outputdir)
+  File "/home/deltunes/leaflink/GNSSVOD/gnssvod/io/preprocessing.py", line 652, in gather_stations
+    export_as_nc(ds = ds,
+    ~~~~~~~~~~~~^^^^^^^^^
+        outpath = outpath,
+        ^^^^^^^^^^^^^^^^^^
+        encoding = encoding)
+        ^^^^^^^^^^^^^^^^^^^^
+  File "/home/deltunes/leaflink/GNSSVOD/gnssvod/io/exporters.py", line 28, in export_as_nc
+    ds.to_netcdf(outpath)
+    ~~~~~~~~~~~~^^^^^^^^^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/core/dataset.py", line 2134, in to_netcdf
+    return to_netcdf(  # type: ignore[return-value]  # mypy cannot resolve the overloads:(
+        self,
+    ...<10 lines>...
+        auto_complex=auto_complex,
+    )
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/writers.py", line 441, in to_netcdf
+    dump_to_store(
+    ~~~~~~~~~~~~~^
+        dataset, store, writer, encoding=encoding, unlimited_dims=unlimited_dims
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/writers.py", line 491, in dump_to_store
+    store.store(variables, attrs, check_encoding, writer, unlimited_dims=unlimited_dims)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/common.py", line 533, in store
+    variables, attributes = self.encode(variables, attributes)
+                            ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/common.py", line 723, in encode
+    k: ensure_dtype_not_object(v, name=k) for k, v in variables.items()
+       ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/common.py", line 708, in ensure_dtype_not_object
+    data = _copy_with_dtype(data, dtype=_infer_dtype(data, name))
+                                        ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/common.py", line 649, in _infer_dtype
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: unable to infer dtype on variable 'Epoch'; xarray cannot serialize arbitrary Python objects

@@ -3,7 +3,7 @@ import asyncio
 sys.path.insert(1, 'UBXtoRNX')
 sys.path.insert(2, 'GNSSVOD')
 #from constUBXtoRNXconv import UBXtoRNX
-from constUBXtoRNXconv_windows import UBXtoRNX, mkconv
+from constUBXtoRNXconv import UBXtoRNX, mkconv
 from const_gnssvod_oneSite import RNXtoIMG
 
 i = 1

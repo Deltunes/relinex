@@ -137,8 +137,8 @@ def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
 			print(f"RNX FILE: {i}")
 			
 			currEpoch = EPOCHMIN
-			rnxFilename = f"./UBXtoRNX/RNX_SUCCESS/success{i}.rnx"
-			azimelevFilename = f"./UBXtoRNX/RNX_SUCCESS/azimuth&elevation{i}.txt"
+			rnxFilename = f"RNX_SUCCESS/success{i}.rnx"
+			azimelevFilename = f"RNX_SUCCESS/azimuth&elevation{i}.txt"
 			conv._outputs[OBS]["fnm"] = rnxFilename
 			conv._outputs[OBS]["stm"] = open(rnxFilename, "w", encoding="utf-8")
 			azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
