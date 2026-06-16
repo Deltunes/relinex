@@ -1,0 +1,168 @@
+# ===========================================================
+# ========================= imports =========================
+import numpy as _np
+import warnings
+# ===========================================================
+__all__ = ["ell2cart", "cart2ell","ell2topo"]
+
+class _Ellipsoid:
+    def __init__(self,a,b):
+        self.a = a
+        self.b = b
+        self.f = (a-b)/a # flattening: $f = \frac{a-b}{a}$
+        self.e1 = _np.sqrt((a**2-b**2)/a**2) # first eccentricity  : $e   = \sqrt{\frac{a^2-b^2}{a^2}}$
+        self.e2 = _np.sqrt((a**2-b**2)/b**2) # second eccentricity : $e^' = \sqrt{\frac{a^2-b^2}{b^2}}$
+    def radiusOfCurvature(self,phi):
+        # Meridian radius of curvature (M)
+        M = self.a*(1-self.e1**2)/(1-self.e1**2*_np.sin(_np.deg2rad(phi))**2)**(3/2) #$M = \frac{a(1 - e^2)}{(1 - e^2\sin(\phi)^2)^(3/2)}$
+        # Prime vertical radius of curvature (N)
+        N = self.a/(1-self.e1**2*_np.sin(_np.deg2rad(phi))**2)**(1/2) #$N = \frac{a}{(1 - e^2\sin(\phi)^2)^(1/2)} $
+        return M, N
+# -----------------------------------------------------------------------------
+def _ellipsoid(ellipsoidName):
+    axes = {'GRS80'  : [6378137.000, 6356752.314140],
+            'WGS84'  : [6378137.000, 6356752.314245],
+            'Hayford': [6378388.000, 6356911.946000]}[ellipsoidName]
+    a, b = axes[0], axes[1]
+    return _Ellipsoid(a,b)
+
+def ell2cart(lat, lon, h, ellipsoid = 'GRS80'):
+    """
+    Convert geodetic coordinates (latitude, longitude, height) to 3D Cartesian coordinates.
+
+    This function transforms geodetic coordinates expressed on a specified ellipsoid
+    into Earth-Centered, Earth-Fixed (ECEF) Cartesian coordinates.
+
+    Parameters
+    ----------
+    lat : float
+        Latitude in degrees.
+    lon : float
+        Longitude in degrees.
+    h : float
+        Ellipsoidal height in meters.
+    ellipsoid : str, optional
+        Ellipsoid to use for the transformation. Default is ``'GRS80'``.
+
+    Returns
+    -------
+    x, y, z : float
+        Cartesian coordinates in meters in an ECEF reference frame.
+
+    Examples
+    --------
+    Build Cartesian coordinates for the Eiffel Tower:
+
+        lat, lon, h = 48.858093, 2.294694, 360
+        x, y, z = ell2cart(lat, lon, h)
+        # x, y, z -> 4201197.602, 168347.839, 4780461.69
+    """
+    ellipsoid = _ellipsoid(ellipsoid)
+    lat = lat * _np.pi / 180 # in radians
+    lon = lon * _np.pi / 180 # in radians
+    N = ellipsoid.a / _np.sqrt(1-ellipsoid.e1**2 * _np.sin(lat)**2)
+    x = (N + h) * _np.cos(lat) * _np.cos(lon)
+    y = (N + h) * _np.cos(lat) * _np.sin(lon)
+    z = ((1-ellipsoid.e1**2) * N + h) * _np.sin(lat)
+    return x,y,z
+
+def cart2ell(x, y, z, ellipsoid = 'GRS80'):
+    """
+    Convert 3D Cartesian coordinates to geodetic coordinates (latitude, longitude, height).
+
+    This function transforms ECEF Cartesian coordinates into geodetic coordinates
+    on a specified ellipsoid. Special handling is included for points near the poles.
+
+    Parameters
+    ----------
+    x, y, z : float
+        Cartesian coordinates in meters in an ECEF reference frame.
+    ellipsoid : str, optional
+        Ellipsoid to use for the transformation. Default is ``'GRS80'``.
+
+    Returns
+    -------
+    lat, lon, h : float
+        Geodetic coordinates in degrees and meters: latitude, longitude, height.
+
+    Notes
+    -----
+    - If (x, y) = (0, 0), the longitude is set to 0 by convention and a warning is issued.
+    - The function iteratively solves for latitude when not at the poles.
+
+    Examples
+    --------
+    Convert the Eiffel Tower coordinates back to geodetic:
+
+        x, y, z = 4201197.602, 168347.839, 4780461.69
+        lat, lon, h = cart2ell(x, y, z)
+        # lat, lon, h -> 48.858093, 2.294694, 360
+    """
+    if (x == 0) and (y == 0):
+        # If (x, y, z) == (0, 0, -), the transformation is not well-defined (longitude can be anything 0 < lon < 360)
+        # Set lon = 0 by convention and provide warning
+        warnings.warn(f'Cannot convert (0, 0, {z}) to unique geodetic coordinates, setting lon = 0 by default')
+    
+    ellipsoid = _ellipsoid(ellipsoid) # create an ellipsoid instance
+    lon = _np.arctan2(y,x) # $\lambda = \atan\frac{y}{x}$
+    p = _np.sqrt(x**2+ y**2) # $p = \sqrt{x^2+y^2}$
+    if p < 1e-3:
+        # poles exception
+        if z<0:
+            lat = -_np.pi/2
+            h = z + ellipsoid.b
+        else:
+            lat = _np.pi/2
+            h = z - ellipsoid.b
+        return _np.rad2deg(lat), _np.rad2deg(lon), h
+    N_init = ellipsoid.a # initial value of prime vertical radius N
+    h_init = _np.sqrt(x**2 + y**2 + z**2) - _np.sqrt(ellipsoid.a * ellipsoid.b)
+    lat_init = _np.arctan2(z, (1 - N_init * ellipsoid.e1**2 / (N_init + h_init)) * p)
+    while True:
+        N = ellipsoid.a / _np.sqrt(1-(ellipsoid.e1**2 * _np.sin(lat_init)**2))
+        h = (p / _np.cos(lat_init)) - N
+        lat = _np.arctan2(z, (1 - N * ellipsoid.e1**2 / (N + h)) * p)
+        if _np.isnan(lat):
+            raise ValueError(f'Geodetic conversion failed to converge with N = {N}, h = {h}, x = {x}, y = {y}, z = {z}')
+        if _np.abs(lat_init - lat) < 1e-8 and _np.abs(h_init - h) < 1e-8:
+            break
+        lat_init = lat
+        h_init   = h
+    return _np.rad2deg(lat), _np.rad2deg(lon), h
+
+def cart2ell_direct(x, y, z, ellipsoid = 'GRS80'):
+    """
+    This function converts 3D cartesian coordinates to geodetic coordinates
+    """
+    ellipsoid = _ellipsoid(ellipsoid) 
+    lon = _np.arctan2(y,x) 
+    p = _np.sqrt(x**2+ y**2)
+    beta = _np.arctan2(ellipsoid.a*z,ellipsoid.b*p)
+    lat = _np.arctan2(z+ellipsoid.e2**2*ellipsoid.b*_np.sin(beta)**3,p-ellipsoid.e1**2*ellipsoid.a*_np.cos(beta)**3)
+    N = ellipsoid.a / _np.sqrt(1-(ellipsoid.e1**2 *_np.sin(lat)**2))
+    h = (p/_np.cos(lat))-N
+    return _np.rad2deg(lat), _np.rad2deg(lon), h
+
+def ell2topo(lat, lon, h):
+    """
+    Convert ellipsoidal coordinates to topocentric coordinates 
+    """
+    lat, lon = _np.deg2rad(lat), _np.deg2rad(lon) # convert degree to radian
+    east = _np.array([[-_np.sin(lon)], [_np.cos(lon)], [0]])
+    north = _np.array([[-_np.cos(lon)*_np.sin(lat)],
+                        [-_np.sin(lon)*_np.sin(lat)],
+                        [ _np.cos(lat)]])
+    up = _np.array([[_np.cos(lon)*_np.cos(lat)],
+                        [_np.sin(lon)*_np.cos(lat)],
+                        [_np.sin(lat)]])
+    return (east, north, up)
+
+def geocentric_latitude(geodetic_latitude, ellipsoid = 'GRS80'):
+    """ Converts geodetic latitude to geocentric latitude """
+    ell = _ellipsoid(ellipsoid)
+    return _np.rad2deg(_np.arctan(_np.tan(_np.deg2rad(geodetic_latitude))/(1-ell.f)**2))
+
+def _distance_euclidean(x1, y1, z1, x2, y2, z2):
+    """ Calculates the euclidean distance [m] using cartesian coordinates """
+    return _np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
+
