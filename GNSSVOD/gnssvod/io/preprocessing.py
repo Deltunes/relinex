@@ -382,11 +382,10 @@ def add_azi_ele(obs: Observation,
     # calculate the gnss parameters (including azimuth and elevation)
     #gnssdf = gnssDataframe(obs,orbit,cut_off=-10)
     fileno=""
-    digits="0123456789"
+    digits="0123456789%"
     for char in station_name:
         if char in digits:
             fileno+=char
-    fileno = int(fileno)
     azimelevdf = azim_elev_fromFile(fileno)
 
     # add the gnss parameters to the observation dataframe
