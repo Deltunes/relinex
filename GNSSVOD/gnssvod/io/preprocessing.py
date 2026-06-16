@@ -18,7 +18,6 @@ from gnssvod.io.io import Observation
 from gnssvod.io.readFile import read_obsFile
 from gnssvod.io.exporters import export_as_nc
 from gnssvod.position.interpolation import sp3_interp_fast
-from gnssvod.position.position import gnssDataframe
 from gnssvod.funcs.constants import _system_name
 
 # CHANGED CODE HERE

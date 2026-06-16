@@ -123,104 +123,103 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 	azimElevFile = open(azimElevFilename, "w", encoding="utf-8")
 	azimElevFile.write(correctedAzimElev)
 
-stream = Serial(COMPORT, 9600, timeout=10)
-ubr = UBXReader(stream)
+def UBXtoRNX(waitTime=60, epochInterval=10):
+	stream = Serial(COMPORT, 9600, timeout=10)
+	ubr = UBXReader(stream)
+		
+	print(f"RINEX FILE LENGTH: {waitTime} second(s)")
+	print(f"EPOCH INTERVAL: {epochInterval} second(s)")
+
+	i = 0
+	try:
+		while True:
+		#if True:
+			i += 1
+			print(f"RNX FILE: {i}")
+			
+			currEpoch = EPOCHMIN
+			conv = mkconv()
+			rnxFilename = f"./UBXtoRNX/RNX_SUCCESS/success{i}.rnx"
+			azimelevFilename = f"./UBXtoRNX/RNX_SUCCESS/azimuth&elevation{i}.txt"
+			conv._outputs[OBS]["fnm"] = rnxFilename
+			conv._outputs[OBS]["stm"] = open(rnxFilename, "w", encoding="utf-8")
+			azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
+
+			currIntTime = waitTime
+
+			end_time = time.time() + waitTime
+			while time.time() < end_time:
+
+				countdown = int(end_time - time.time())
+				if countdown < int(currIntTime):
+					print(f"\r\t\t{countdown}\t\t", end="")
+					currIntTime = countdown
+
+				raw, msg = ubr.read()
+				
+				if msg == None:
+					continue
+					
+				if (msg.identity == "RXM-RAWX"):
+					currSec = int(msg.rcvTow)
+					if ((currSec % epochInterval) == 0):
+						input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
+					else:
+						input_prc = 0
+				else:
+					input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
+
+				if (msg.identity == "NAV-SAT"):
+					azimelevDict = {}
+					for j in range(1, msg.numSvs):
+						azimelev = (getattr(msg, f"azim_{j:02d}"), getattr(msg, f"elev_{j:02d}"))
+						id = ""
+						match (getattr(msg, f"gnssId_{j:02d}")):
+							case 0:
+								id = f"G{getattr(msg, f"svId_{j:02d}"):02d}"
+							case 1:
+								id = f"S{(getattr(msg, f"svId_{j:02d}") - 100):02d}"
+							case 2:
+								id = f"E{getattr(msg, f"svId_{j:02d}"):02d}"
+							case 3:
+								id = f"C{getattr(msg, f"svId_{j:02d}"):02d}"
+							case 6:
+								id = f"R{getattr(msg, f"svId_{j:02d}"):02d}"
+							case _:
+								id = "???"
+						azimelevDict[id] = azimelev
+						
+					currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
+
+				conv._outputs[OBS]["prc"] += input_prc
+				
+			currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
+
+			# Output RINEX file
+			conv.process_output_data(["O"])
+			conv._outputs[OBS]["stm"].close()
+			azimelevFile.close()
+
+			RNXformatEdit(rnxFilename)
+			correctAzimElev(rnxFilename, azimelevFilename)
+			#subprocess.run(["sudo", "shutdown", "-h", "now"])
+
+	except KeyboardInterrupt:
+		if (conv._outputs[OBS]["stm"].closed == False):
+			conv.process_output_data(["O"])
+			conv._outputs[OBS]["stm"].close()
+
+			RNXformatEdit(rnxFilename)
+			correctAzimElev(rnxFilename, azimelevFilename)
+
+		if (azimelevFile.closed == False):
+			currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
+			azimelevFile.close()
+			correctAzimElev(rnxFilename, azimelevFilename)
 
 if len(sys.argv) > 2:
-	waitTime = int(sys.argv[1])
-	epochInterval = int(sys.argv[2])
+	UBXtoRNX(int(sys.argv[1]),int(sys.argv[2]))
 elif len(sys.argv) > 1:
-	waitTime = int(sys.argv[1])
+	UBXtoRNX(int(sys.argv[1]))
 else:
-	waitTime = 60
-	epochInterval = 10
-	
-print(f"RINEX FILE LENGTH: {waitTime} second(s)")
-print(f"EPOCH INTERVAL: {epochInterval} second(s)")
-
-i = 0
-try:
-	#while True:
-	if True:
-		i += 1
-		print(f"RNX FILE: {i}")
-		
-		currEpoch = EPOCHMIN
-		conv = mkconv()
-		rnxFilename = f"./UBXtoRNX/RNX_SUCCESS/success{i}.rnx"
-		azimelevFilename = f"./UBXtoRNX/RNX_SUCCESS/azimuth&elevation{i}.txt"
-		conv._outputs[OBS]["fnm"] = rnxFilename
-		conv._outputs[OBS]["stm"] = open(rnxFilename, "w", encoding="utf-8")
-		azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
-
-		currIntTime = waitTime
-
-		end_time = time.time() + waitTime
-		while time.time() < end_time:
-
-			countdown = int(end_time - time.time())
-			if countdown < int(currIntTime):
-				print(f"\r\t\t{countdown}\t\t", end="")
-				currIntTime = countdown
-
-			raw, msg = ubr.read()
-			
-			if msg == None:
-				continue
-				
-			if (msg.identity == "RXM-RAWX"):
-				currSec = int(msg.rcvTow)
-				if ((currSec % epochInterval) == 0):
-					input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
-				else:
-					input_prc = 0
-			else:
-				input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
-
-			if (msg.identity == "NAV-SAT"):
-				azimelevDict = {}
-				for j in range(1, msg.numSvs):
-					azimelev = (getattr(msg, f"azim_{j:02d}"), getattr(msg, f"elev_{j:02d}"))
-					id = ""
-					match (getattr(msg, f"gnssId_{j:02d}")):
-						case 0:
-							id = f"G{getattr(msg, f"svId_{j:02d}"):02d}"
-						case 1:
-							id = f"S{(getattr(msg, f"svId_{j:02d}") - 100):02d}"
-						case 2:
-							id = f"E{getattr(msg, f"svId_{j:02d}"):02d}"
-						case 3:
-							id = f"C{getattr(msg, f"svId_{j:02d}"):02d}"
-						case 6:
-							id = f"R{getattr(msg, f"svId_{j:02d}"):02d}"
-						case _:
-							id = "???"
-					azimelevDict[id] = azimelev
-					
-				currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
-
-			conv._outputs[OBS]["prc"] += input_prc
-			
-		currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
-
-		# Output RINEX file
-		conv.process_output_data(["O"])
-		conv._outputs[OBS]["stm"].close()
-		azimelevFile.close()
-
-		RNXformatEdit(rnxFilename)
-		correctAzimElev(rnxFilename, azimelevFilename)
-		subprocess.run(["sudo", "shutdown", "-h", "now"])
-
-except KeyboardInterrupt:
-	if (conv._outputs[OBS]["stm"].closed == False):
-		conv.process_output_data(["O"])
-		conv._outputs[OBS]["stm"].close()
-
-		RNXformatEdit(rnxFilename)
-		correctAzimElev(rnxFilename, azimelevFilename)
-
-	if (azimelevFile.closed == False):
-		currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
-		azimelevFile.close()
-		correctAzimElev(rnxFilename, azimelevFilename)
+	UBXtoRNX()
