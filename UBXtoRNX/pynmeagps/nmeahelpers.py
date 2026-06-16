@@ -836,6 +836,7 @@ def wnotow2utc(
     else:
         ep0 = EPOCH0_GPS
         rollover = 1024
+    # CHANGED CODE HERE
     #wno = wno % rollover if modwno else wno
     #tow %= 604800000
     current = datetime.now(timezone.utc)
