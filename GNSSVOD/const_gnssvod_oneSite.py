@@ -16,8 +16,8 @@ def readFileDate():
 	return fileDatetime
 
 def RNXtoIMG(rnxFilename, azimelevFilename):
-	pattern = {'rnxfile1':'RNX_SUCCESS/rinex/success1.rnx',
-			'rnxfile2':'RNX_SUCCESS/rinex/success2.rnx'}
+	pattern = {'rnxfile1':f'{rnxFilename}',
+			  'rnxfile2':f'{azimelevFilename}'}
 
 	outputdir = {'rnxfile1':'GNSSVOD/nc/',
 				'rnxfile2':'GNSSVOD/nc/'}
