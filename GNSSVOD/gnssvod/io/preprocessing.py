@@ -198,10 +198,10 @@ def preprocess(filepattern: dict,
                 # CHANGED CODE HERE
                 if not 'orbit_data' in locals():
                     # if there is no previous orbit data, the orbit data is returned as well
-                    x, orbit_data = add_azi_ele(x, station_name, aux_path = aux_path)
+                    x, orbit_data = add_azi_ele(filename, x, station_name, aux_path = aux_path)
                 else:
                     # on following iterations the orbit data is tentatively recycled to reduce computational time
-                    x, orbit_data = add_azi_ele(x, station_name, orbit_data, aux_path = aux_path)
+                    x, orbit_data = add_azi_ele(filename, x, station_name, orbit_data, aux_path = aux_path)
 
             # make sure we drop any duplicates
             x.observation=x.observation[~x.observation.index.duplicated(keep='first')]
@@ -318,7 +318,8 @@ def resample_obs(obs: Observation, interval: str) -> Observation:
     obs.interval = pd.Timedelta(interval).seconds
     return obs
 
-def add_azi_ele(obs: Observation,
+def add_azi_ele(filename: str,
+                obs: Observation,
                 station_name,
                 orbit_data: Union[pd.DataFrame,None] = None,
                 aux_path: Union[str,None] = None) -> tuple[Observation,pd.DataFrame]:
@@ -383,7 +384,7 @@ def add_azi_ele(obs: Observation,
     #gnssdf = gnssDataframe(obs,orbit,cut_off=-10)
     fileno=""
     digits="0123456789%"
-    for char in station_name:
+    for char in filename:
         if char in digits:
             fileno+=char
     azimelevdf = azim_elev_fromFile(fileno)
