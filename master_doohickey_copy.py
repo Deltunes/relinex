@@ -7,7 +7,6 @@ from const_gnssvod_oneSite_copy import RNXtoIMG
 from collections import deque
 
 i = 1
-start_time = ""
 quit = False
 conv = mkconv()
 rnxDeleteQ = deque()
@@ -34,7 +33,7 @@ while not quit:
 	RNXtoIMG(rnxFilename)
 	
 	# AFTER FIRST TURN ONLY
-	if i > 4:
+	if i > 1:
 		rnxDelete = rnxDeleteQ.popleft()
 		azielevDelete = azielevDeleteQ.popleft()
 		
