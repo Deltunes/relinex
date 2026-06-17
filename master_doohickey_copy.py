@@ -33,7 +33,7 @@ while not quit:
 	RNXtoIMG(rnxFilename)
 	
 	# AFTER FIRST TURN ONLY
-	if i > 1:
+	if i > 2:
 		rnxDelete = rnxDeleteQ.popleft()
 		azielevDelete = azielevDeleteQ.popleft()
 		

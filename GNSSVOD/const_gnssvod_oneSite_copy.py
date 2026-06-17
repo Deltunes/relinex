@@ -8,6 +8,8 @@ import matplotlib.dates as mdates
 import datetime
 
 def RNXtoIMG(rnxFilepath):
+	rnxFilename = rnxFilepath.split("/")[-1].split(".")[0]
+	
 	pattern = {'rnxfile1':f'{rnxFilepath}'}
 
 	outputdir = {'rnxfile1':'GNSSVOD/nc/'}
@@ -19,12 +21,12 @@ def RNXtoIMG(rnxFilepath):
 	print("Opening nc dataset")
 	ds = xr.open_mfdataset('GNSSVOD/nc/success1.nc',combine='nested',concat_dim='Epoch',join='outer')
 
-	df = ds.to_dataframe().dropna(how='all').reorder_levels(["Station","Epoch","SV"]).sort_index()
+	df = ds.to_dataframe().dropna(how='all').sort_index()
 
 	# ALL SATELLITES, ONE SITE\
 	print("Subsetting Dataframe")
 	station_name = 'rnxfile1'
-	subdf = df.xs(station_name,level='Station')
+	subdf = df
 	
 	# initialize figure with polar axes
 	print("Plot setup")
@@ -42,7 +44,9 @@ def RNXtoIMG(rnxFilepath):
 	ax.set_theta_zero_location("N")
 	plt.colorbar(hs, shrink=0.5, label='SNR (L1)')
 	plt.title(station_name)
+	#plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite.png")
 	plt.savefig("IMAGE_SUCCESS/plot_oneSite.png")
+	plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite_{rnxFilename}.png")
 
 	hemi = gv.hemibuild(4)
 	patches = hemi.patches()
@@ -55,12 +59,12 @@ def RNXtoIMG(rnxFilepath):
 
 	newdf = hemi.add_CellID(df)
 
-	hemi_average = newdf.groupby(['CellID','Station']).mean()
+	hemi_average = newdf.groupby('CellID').mean()
 
 	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
 
 	# associate the mean values to the patches, join inner will drop patches with no data, making plotting slightly faster
-	ipatches = pd.concat([patches,hemi_average.xs(station_name, level='Station')],join='inner',axis=1)
+	ipatches = pd.concat([patches,hemi_average],join='inner',axis=1)
 
 	# plotting with colored patches
 	for k in subdf.columns.tolist():
@@ -73,5 +77,7 @@ def RNXtoIMG(rnxFilepath):
 	ax.set_title(station_name)
 
 	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05, label='SNR (L1)')
-	plt.savefig('IMAGE_SUCCESS/plot_oneSite_hemi.png',facecolor='white',transparent=False,bbox_inches='tight')
+	#plt.savefig('IMAGE_SUCCESS/hemi/plot_oneSite_hemi.png',facecolor='white',transparent=False,bbox_inches='tight')
+	plt.savefig("IMAGE_SUCCESS/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
+	plt.savefig(f"IMAGE_SUCCESS/hemi/plot_oneSite_hemi_{rnxFilename}.png",facecolor='white',transparent=False,bbox_inches='tight')
 	plt.close()
