@@ -1,0 +1,83 @@
+python3 master_doohickey.py 20 5
+RINEX FILE LENGTH: 20 second(s)
+EPOCH INTERVAL: 5 second(s)
+RNX FILE: 1
+		00		
+RINEX FILE LENGTH: 20 second(s)
+EPOCH INTERVAL: 5 second(s)
+RNX FILE: 2
+		19		Unknown protocol header b'$\x00'.
+Unknown protocol header b'$\x06'.
+Unknown protocol header b'$\x07'.
+Unknown protocol header b'$\x07'.
+		00		
+Created a temporary directory at /tmp/tmp3ar6y4xe
+RNX_SUCCESS/rinex/success1.rnx exists | Reading...
+Observation file  RNX_SUCCESS/rinex/success1.rnx  is read in 0.06 seconds.
+Processing 113 individual observations
+Calculating Azimuth and Elevation
+Saved 113 individual observations in GNSSVOD/nc/success1.nc
+RNX_SUCCESS/rinex/success2.rnx exists | Reading...
+Observation file  RNX_SUCCESS/rinex/success2.rnx  is read in 0.08 seconds.
+Processing 224 individual observations
+Calculating Azimuth and Elevation
+Saved 224 individual observations in GNSSVOD/nc/success2.nc
+Removed the temporary directory at /tmp/tmp3ar6y4xe
+Extracting Epochs from files
+----- Processing gnssvod_test
+-- Processing interval [2026-06-17 14:54:22, 2026-06-18 14:54:22)
+Found 1 file(s) for rnxfile1
+Reading
+Found 1 file(s) for rnxfile2
+Reading
+Concatenating stations
+Saving result in GNSSVOD/nc2/
+Saved 337 observations in gnssvod_test_20260617145422_20260618145422.nc
+-- Processing interval [2026-06-18 14:54:22, 2026-06-19 14:54:22)
+Found 0 file(s) for rnxfile1
+No data for station rnxfile1.
+Found 0 file(s) for rnxfile2
+No data for station rnxfile2.
+No data at all for that interval, skipping..
+Opening nc2 dataset
+/home/deltunes/leaflink/GNSSVOD/const_gnssvod_oneSite.py:56: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'SV' ('SV',) The recommendation is to set join explicitly for this case.
+  ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='by_coords')
+/home/deltunes/leaflink/GNSSVOD/const_gnssvod_oneSite.py:56: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'SV' ('SV',) The recommendation is to set join explicitly for this case.
+  ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='by_coords')
+/home/deltunes/leaflink/GNSSVOD/const_gnssvod_oneSite.py:56: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'SV' ('SV',) The recommendation is to set join explicitly for this case.
+  ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='by_coords')
+/home/deltunes/leaflink/GNSSVOD/const_gnssvod_oneSite.py:56: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'Epoch' ('Epoch',) The recommendation is to set join explicitly for this case.
+  ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='by_coords')
+Traceback (most recent call last):
+  File "/home/deltunes/leaflink/master_doohickey.py", line 52, in <module>
+    RNXtoIMG(rnxFilename, azielevFilename)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/deltunes/leaflink/GNSSVOD/const_gnssvod_oneSite.py", line 56, in RNXtoIMG
+    ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='by_coords')
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/backends/api.py", line 1683, in open_mfdataset
+    combined = combine_by_coords(
+        datasets,
+    ...<4 lines>...
+        combine_attrs=combine_attrs,
+    )
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/structure/combine.py", line 1127, in combine_by_coords
+    concatenated_grouped_by_data_vars = tuple(
+        _combine_single_variable_hypercube(
+    ...<8 lines>...
+        for vars, datasets_with_same_vars in grouped_by_vars
+    )
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/structure/combine.py", line 1128, in <genexpr>
+    _combine_single_variable_hypercube(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        tuple(datasets_with_same_vars),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        combine_attrs=combine_attrs,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/deltunes/.local/lib/python3.13/site-packages/xarray/structure/combine.py", line 790, in _combine_single_variable_hypercube
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: Resulting object does not have monotonic global indexes along dimension SV
