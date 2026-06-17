@@ -53,7 +53,7 @@ def RNXtoIMG(rnxFilename, azimelevFilename):
 	out = gv.gather_stations(pattern,pairings,timeintervals,keepvars=keepvars,outputdir=outputdir)
 
 	print("Opening nc2 dataset")
-	ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='by_coords')
+	ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='nested',concat_dim='Epoch',join='outer')
 	#ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='nested',concat_dim='Epoch')
 
 	df = ds.to_dataframe().dropna(how='all').reorder_levels(["Station","Epoch","SV"]).sort_index()
