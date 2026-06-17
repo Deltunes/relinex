@@ -7,18 +7,10 @@ from matplotlib.collections import PatchCollection
 import matplotlib.dates as mdates
 import datetime
 
-def readFileDate():
-	datetimeFilename = f"RNX_SUCCESS/azielev/azimuth&elevation1.txt"
-	datetimeFile = open(datetimeFilename, "r", encoding="utf-8")
-	datetimeData = datetimeFile.readline()
-	datetimeSplit = datetimeData.split("/")
-	fileDatetime = f"{datetimeSplit[1]}-{datetimeSplit[2]}-{datetimeSplit[3]} {datetimeSplit[4]}:{datetimeSplit[5]}:{datetimeSplit[6]}"
-	return fileDatetime
-
-def RNXtoIMG(rnxFilename, azimelevFilename):
-	pattern = {'rnxfile1':f'{rnxFilename[0]}',
-			  'rnxfile2':f'{rnxFilename[1]}'}
-	#pattern = {'rnxfile1':f'{rnxFilename}',
+def RNXtoIMG(rnxFilepath, azielevFilepath, start_time):
+	pattern = {'rnxfile1':f'{rnxFilepath[0]}',
+			  'rnxfile2':f'{rnxFilepath[1]}'}
+	#pattern = {'rnxfile1':f'{rnxFilepath}',
 	#		  'fodder%':'RNX_SUCCESS/rinex/fodder%.rnx'}
 
 	outputdir = {'rnxfile1':'GNSSVOD/nc/',
@@ -36,7 +28,7 @@ def RNXtoIMG(rnxFilename, azimelevFilename):
 	#		'fodder%':'GNSSVOD/nc/fodder%.nc'}
 
 	# get time range
-	startday = pd.to_datetime(readFileDate())
+	startday = pd.to_datetime(start_time)
 	timeintervals=pd.interval_range(start=startday, periods=2, freq='D', closed='left')
 
 	# define how to make pairs, always give reference station first, matching the dictionary keys of 'pattern'
