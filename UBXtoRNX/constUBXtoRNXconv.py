@@ -85,7 +85,6 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 
 	# Get satellite IDs
 	currEpochLine = ""
-	currEpochLineSplit = rnxData[0].strip()
 	satIDs = {}
 	for line in rnxData:
 		if line[0] == ">":
@@ -138,10 +137,19 @@ def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
 			
 			currEpoch = EPOCHMIN
 			rnxFilename = f"RNX_SUCCESS/rinex/success{i}.rnx"
-			azimelevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{i}.txt"
+			if i == 1:
+				azimelevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{i}.txt"
+				azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
+			else:
+				azimelevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{i}.txt"
+				azimelevPrevname = f"RNX_SUCCESS/azielev/azimuth&elevation{i-1}.txt"
+				azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
+				azimelevPrevFile = open(azimelevPrevname, "r", encoding="utf-8")
+				azimelevFile.write(azimelevPrevFile.read())
+				azimelevPrevFile.close()
+			
 			conv._outputs[OBS]["fnm"] = rnxFilename
 			conv._outputs[OBS]["stm"] = open(rnxFilename, "w", encoding="utf-8")
-			azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
 
 			currIntTime = waitTime
 
