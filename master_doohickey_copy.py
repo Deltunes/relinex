@@ -3,7 +3,7 @@ import os
 sys.path.insert(1, 'UBXtoRNX')
 sys.path.insert(2, 'GNSSVOD')
 from constUBXtoRNXconv import UBXtoRNX, mkconv
-from const_gnssvod_oneSite_copy import RNXtoIMG
+from const_gnssvod_oneSite import RNXtoIMG
 from collections import deque
 
 i = 1

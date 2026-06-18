@@ -108,12 +108,13 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 	currEpochKey = ""
 	for line in azimElevData:
 		if line[0] == ">":
-			azimelevEpoch = line.replace("-", " ").replace(":", " ").replace("+"," ")
-			azimelevEpoch = azimelevEpoch.split(" ")
-			azimelevEpoch = azimelevEpoch[0:7]
-			azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
-			currEpochKey = "/".join(azimelevEpoch)
-			correctedAzimElev += (currEpochKey + "\n")
+			if "/" not in line:
+				azimelevEpoch = line.replace("-", " ").replace(":", " ").replace("+"," ")
+				azimelevEpoch = azimelevEpoch.split(" ")
+				azimelevEpoch = azimelevEpoch[0:7]
+				azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
+				currEpochKey = "/".join(azimelevEpoch)
+				correctedAzimElev += (currEpochKey + "\n")
 		else:
 			currSatID = line[0:3]
 			if currSatID in satIDs[currEpochKey]:
