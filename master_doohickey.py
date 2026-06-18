@@ -13,6 +13,12 @@ conv = mkconv()
 rnxDeleteQ = deque()
 azielevDeleteQ = deque()
 
+# Make any missing directories
+os.makedirs("RNX_SUCCESS/rinex", exist_ok=True)
+os.makedirs("RNX_SUCCESS/azielev", exist_ok=True)
+os.makedirs("IMAGE_SUCCESS/scatter", exist_ok=True)
+os.makedirs("IMAGE_SUCCESS/hemi", exist_ok=True)
+
 # Take command line args as input for waitTime and epochInterval
 if len(sys.argv) > 2:
 	waitTime = int(sys.argv[1])
@@ -41,8 +47,7 @@ while not quit:
 	RNXtoIMG(rnxFilepath)
 	
 	# AFTER FIRST TURN ONLY
-	# Delete previous RINEX file to save space
-	# NEED TO ADD .nc FILE DELETION TOO!!!!!
+	# Delete unnecessary files to save space
 	if i > 2:
 		rnxDelete = rnxDeleteQ.popleft()
 		azielevDelete = azielevDeleteQ.popleft()
@@ -61,7 +66,7 @@ while not quit:
 			print(f"Warning: AZIELEV file to DELETE could not be found at {azielevDelete}")
 
 		if os.path.exists(rnxNetCDF):
-			print(f"Deleting AZIELEV file at: {rnxNetCDF}")
+			print(f"Deleting NETCDF file at: {rnxNetCDF}")
 			os.remove(rnxNetCDF)
 		else:
-			print(f"Warning: AZIELEV file to DELETE could not be found at {rnxNetCDF}")
+			print(f"Warning: NETCDF file to DELETE could not be found at {rnxNetCDF}")
