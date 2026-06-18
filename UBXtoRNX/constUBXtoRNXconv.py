@@ -166,6 +166,10 @@ def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
 			azielevFile.write(azielevPrevFile.read())
 			azielevPrevFile.close()
 			azielevFile.close()
+		else:
+			azielevFile = open(azielevFilename, "w", encoding="utf-8")
+			azielevFile.write("")
+			azielevFile.close()
 
 		# Set up file stream for RINEX file output
 		conv._outputs[OBS]["fnm"] = rnxFilename
