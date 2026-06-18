@@ -25,12 +25,12 @@ else:
 
 while not quit:
 	# Process GNSS data and convert to RINEX format + extra Azimuth/Elevation data
-	rnxFilename = ["",""]
-	azielevFilename = ["",""]
+	rnxFilepath = ""
+	azielevFilepath = ""
 
-	rnxFilename, azielevFilename, conv, quit = UBXtoRNX(conv, i, waitTime=waitTime, epochInterval=epochInterval)
-	rnxDeleteQ.append(rnxFilename)
-	azielevDeleteQ.append(azielevFilename)
+	rnxFilepath, azielevFilepath, conv, quit = UBXtoRNX(conv, i, waitTime=waitTime, epochInterval=epochInterval)
+	rnxDeleteQ.append(rnxFilepath)
+	azielevDeleteQ.append(azielevFilepath)
 	i += 1
 
 	# If program is quit during UBXtoRNX, end while loop
@@ -38,7 +38,7 @@ while not quit:
 		break
 
 	# Plot RINEX file
-	RNXtoIMG(rnxFilename)
+	RNXtoIMG(rnxFilepath)
 	
 	# AFTER FIRST TURN ONLY
 	# Delete previous RINEX file to save space
@@ -46,6 +46,7 @@ while not quit:
 	if i > 2:
 		rnxDelete = rnxDeleteQ.popleft()
 		azielevDelete = azielevDeleteQ.popleft()
+		rnxNetCDF = f"GNSSVOD/nc/{rnxDelete.split("/")[-1].split(".")[0]}.nc"
 		
 		if os.path.exists(rnxDelete):
 			print(f"Deleting RINEX file at: {rnxDelete}")
@@ -58,3 +59,9 @@ while not quit:
 			os.remove(azielevDelete)
 		else:
 			print(f"Warning: AZIELEV file to DELETE could not be found at {azielevDelete}")
+
+		if os.path.exists(rnxNetCDF):
+			print(f"Deleting AZIELEV file at: {rnxNetCDF}")
+			os.remove(rnxNetCDF)
+		else:
+			print(f"Warning: AZIELEV file to DELETE could not be found at {rnxNetCDF}")
