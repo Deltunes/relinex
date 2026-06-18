@@ -43,16 +43,15 @@ def writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict):
 	
 	if currEpoch != newEpoch:
 			currEpoch = newEpoch
-			azimelevFile.write("> ")
-		
-			azimelevEpoch = currEpoch.replace("-", " ").replace(":", " ").replace("+"," ")
+			#azimelevFile.write("> ")
+			azimelevEpoch = str(currEpoch).replace("-", " ").replace(":", " ").replace("+"," ")
 			azimelevEpoch = azimelevEpoch.split(" ")
-			azimelevEpoch = azimelevEpoch[0:7]
-			azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
+			azimelevEpoch = azimelevEpoch[0:6]
+			azimelevEpoch[5] = (azimelevEpoch[5])[0:2]
 			currEpochLine = "/".join(azimelevEpoch)
 
-			azimelevFile.write(currEpochLine)
-			azimelevFile.write("\n")
+			azimelevFile.write(f">/{currEpochLine}\n")
+			#azimelevFile.write("\n")
 			
 			for k in azimelevDict:
 				azimelevFile.write(str(k))
@@ -116,7 +115,8 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 	currEpochKey = ""
 	for line in azimElevData:
 		if line[0] == ">":
-			correctedAzimElev += (line + "\n")
+			currEpochKey = line.strip()
+			correctedAzimElev += line
 			#if "/" not in line:
 			#	azimelevEpoch = line.replace("-", " ").replace(":", " ").replace("+"," ")
 			#	azimelevEpoch = azimelevEpoch.split(" ")
