@@ -19,7 +19,7 @@ def RNXtoIMG(rnxFilepath):
 	gv.preprocess(pattern, interval='1s', keepvars=keepvars, outputdir=outputdir, overwrite=True)
 
 	print("Opening nc dataset")
-	ds = xr.open_mfdataset('GNSSVOD/nc/success1.nc',combine='nested',concat_dim='Epoch',join='outer')
+	ds = xr.open_mfdataset(f"GNSSVOD/nc/{rnxFilename}.nc",combine='nested',concat_dim='Epoch',join='outer')
 
 	df = ds.to_dataframe().dropna(how='all').sort_index()
 
