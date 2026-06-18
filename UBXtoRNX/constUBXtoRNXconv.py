@@ -44,8 +44,16 @@ def writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict):
 	if currEpoch != newEpoch:
 			currEpoch = newEpoch
 			azimelevFile.write("> ")
-			azimelevFile.write(str(currEpoch))
+		
+			azimelevEpoch = currEpoch.replace("-", " ").replace(":", " ").replace("+"," ")
+			azimelevEpoch = azimelevEpoch.split(" ")
+			azimelevEpoch = azimelevEpoch[0:7]
+			azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
+			currEpochLine = "/".join(azimelevEpoch)
+
+			azimelevFile.write(currEpochLine)
 			azimelevFile.write("\n")
+			
 			for k in azimelevDict:
 				azimelevFile.write(str(k))
 				azimelevFile.write("/")
@@ -108,13 +116,14 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 	currEpochKey = ""
 	for line in azimElevData:
 		if line[0] == ">":
-			if "/" not in line:
-				azimelevEpoch = line.replace("-", " ").replace(":", " ").replace("+"," ")
-				azimelevEpoch = azimelevEpoch.split(" ")
-				azimelevEpoch = azimelevEpoch[0:7]
-				azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
-				currEpochKey = "/".join(azimelevEpoch)
-				correctedAzimElev += (currEpochKey + "\n")
+			correctedAzimElev += (line + "\n")
+			#if "/" not in line:
+			#	azimelevEpoch = line.replace("-", " ").replace(":", " ").replace("+"," ")
+			#	azimelevEpoch = azimelevEpoch.split(" ")
+			#	azimelevEpoch = azimelevEpoch[0:7]
+			#	azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
+			#	currEpochKey = "/".join(azimelevEpoch)
+			#	correctedAzimElev += (currEpochKey + "\n")
 		else:
 			currSatID = line[0:3]
 			if currSatID in satIDs[currEpochKey]:
