@@ -1,12 +1,11 @@
-from datetime import datetime, timezone
 import time
 from serial import Serial
 from pyubx2 import UBXReader
 from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import OBS, EPOCHMIN
-import subprocess
-import sys
 
+# 	Lists serial ports to determine COMPORT
+# 	Uncomment if needed
 #import serial.tools.list_ports
 #ports = serial.tools.list_ports.comports()
 #for port in ports:

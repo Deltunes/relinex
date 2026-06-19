@@ -1,12 +1,11 @@
-from datetime import datetime, timezone
 import time
 from serial import Serial
 from pyubx2 import UBXReader
 from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import OBS, EPOCHMIN
-import subprocess
-import sys
 
+# 	Lists serial ports to determine COMPORT
+# 	Uncomment if needed
 #import serial.tools.list_ports
 #ports = serial.tools.list_ports.comports()
 #for port in ports:
@@ -31,24 +30,36 @@ def mkconv():
 		comments=[],
 	)
 
-def writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict):
+# Write Azimuth and Elevation to .txt file
+def writeazielev(conv, currEpoch, azielevFile, azielevDict):
+	# Get epoch from RinexConverter
 	newEpoch = conv.get_current_epoch("O")
 
+	# If epoch returns as default, just use last valid epoch
 	if newEpoch == EPOCHMIN:
 		return currEpoch
 	
+	# If epoch has changed since last check
 	if currEpoch != newEpoch:
 			currEpoch = newEpoch
-			azimelevFile.write("> ")
-			azimelevFile.write(str(currEpoch))
-			azimelevFile.write("\n")
-			for k in azimelevDict:
-				azimelevFile.write(str(k))
-				azimelevFile.write("/")
-				azimelevFile.write(f"{str(azimelevDict[k][0])}/{str(azimelevDict[k][1])}")
-				azimelevFile.write("\n")
+
+			# Format epoch with "/" between to read later
+			azielevEpoch = str(currEpoch).replace("-", " ").replace(":", " ").replace("+"," ")
+			azielevEpoch = azielevEpoch.split(" ")
+			azielevEpoch = azielevEpoch[0:6]
+			azielevEpoch[5] = (azielevEpoch[5])[0:2]
+			currEpochLine = "/".join(azielevEpoch)
+
+			# Write epoch and all sattelite data for epoch
+			azielevFile.write(f">/{currEpochLine}\n")
+			for k in azielevDict:
+				azielevFile.write(str(k))
+				azielevFile.write("/")
+				azielevFile.write(f"{str(azielevDict[k][0])}/{str(azielevDict[k][1])}")
+				azielevFile.write("\n")
 	return currEpoch
 
+# Reformat RINEX file so that GNSS-VOD can read it
 def RNXformatEdit(rnxFilename):
 	# Reformat RINEX file to work with GNSSVODs
 	rplcRNX = open(rnxFilename, "r", encoding="utf-8")
@@ -62,18 +73,21 @@ def RNXformatEdit(rnxFilename):
 	rplcRNX.write(rplcData)
 	rplcRNX.close()
 
-def correctAzimElev(rnxFilename, azimElevFilename):
+# For some reason, the azielev file has more satellites than the RINEX file at the same epoch
+# Create a dictionary where: dict[epoch] = (azimuth, elevation)
+def correctazielev(rnxFilename, azielevFilename):
+	# 	DATA RETRIEVAL FROM FILES
 	# Open RINEX file to read
 	rnxFile = open(rnxFilename, "r", encoding="utf-8")
 	rnxData = rnxFile.readlines()
 	rnxFile.close()
 
 	# Open Azimuth/Elevation file to read
-	azimElevFile = open(azimElevFilename, "r", encoding="utf-8")
-	azimElevData = azimElevFile.readlines()
-	azimElevFile.close()
+	azielevFile = open(azielevFilename, "r", encoding="utf-8")
+	azielevData = azielevFile.readlines()
+	azielevFile.close()
 
-	# Increment till satellites
+	# Increment past header until satellites
 	for line in range(len(rnxData)-1):
 		if rnxData[line][0] == ">":
 			rnxData = rnxData[line:]
@@ -81,10 +95,11 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 
 	# Get satellite IDs
 	currEpochLine = ""
-	currEpochLineSplit = rnxData[0].strip()
 	satIDs = {}
 	for line in rnxData:
+		# If line is epoch
 		if line[0] == ">":
+			# Reformat epoch line to match azielev format
 			currEpochSplit = line.strip().split()
 			currEpochSplit = currEpochSplit[0:7]
 			currEpochSplit[2] = f"{int(currEpochSplit[2]):02d}"
@@ -94,127 +109,151 @@ def correctAzimElev(rnxFilename, azimElevFilename):
 			currEpochSplit[6] = f"{float(currEpochSplit[6]):09f}"
 			currEpochLine = "/".join(currEpochSplit)
 			currEpochLine = currEpochLine[:-7]
+		# Else line is satellite data
 		else:
+			# If a new epoch was reached, initialize the set for that key
+			# Then, add the satellite ID to the set for that key
 			if currEpochLine not in satIDs:
 				satIDs[currEpochLine] = set()
 			satIDs[currEpochLine].add(line[0:3])
 
-
-	# Write ONLY lines with satellite IDs that are in the RINEX file
-	correctedAzimElev = ""
+	# 	COMPARE RINEX AND AZIELEV SATELLITE IDs
+	# 	WRITE ONLY MATCHES TO AZIELEV FILE
+	correctedazielev = ""
 	currEpochKey = ""
-	for line in azimElevData:
+	for line in azielevData:
 		if line[0] == ">":
-			azimelevEpoch = line.replace("-", " ").replace(":", " ").replace("+"," ")
-			azimelevEpoch = azimelevEpoch.split(" ")
-			azimelevEpoch = azimelevEpoch[0:7]
-			azimelevEpoch[6] = (azimelevEpoch[6])[0:2]
-			currEpochKey = "/".join(azimelevEpoch)
-			correctedAzimElev += (currEpochKey + "\n")
+			currEpochKey = line.strip()
+			correctedazielev += line
 		else:
 			currSatID = line[0:3]
 			if currSatID in satIDs[currEpochKey]:
-				correctedAzimElev += line
+				correctedazielev += line
 
-	azimElevFile = open(azimElevFilename, "w", encoding="utf-8")
-	azimElevFile.write(correctedAzimElev)
-	
+	#	WRITE CORRECTED AZIMUTH/ELEVATION DATA
+	azielevFile = open(azielevFilename, "w", encoding="utf-8")
+	azielevFile.write(correctedazielev)
+	azielevFile.close()
+
 def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
+	# Connect to Sparkfun chip through COMPORT
 	stream = Serial(COMPORT, 9600, timeout=10)
 	ubr = UBXReader(stream)
-		
+	
 	print(f"RINEX FILE LENGTH: {waitTime} second(s)")
 	print(f"EPOCH INTERVAL: {epochInterval} second(s)")
 
 	try:
-		#while True:
-		if True:
-			i = fileno
-			print(f"RNX FILE: {i}")
+		print(f"RNX FILE: {fileno}")
+		
+		# Set default invalid epoch value
+		currEpoch = EPOCHMIN
+
+		# Set RINEX and AZIELEV filenames
+		rnxFilename = f"RNX_SUCCESS/rinex/success{fileno}.rnx"
+
+		# After first file, azimuth/elevation data needs to be appended to previous data
+		azielevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
+		if fileno > 1:
+			azielevPrevname = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno-1}.txt"
+			azielevFile = open(azielevFilename, "w", encoding="utf-8")
+			azielevPrevFile = open(azielevPrevname, "r", encoding="utf-8")
+			azielevFile.write(azielevPrevFile.read())
+			azielevPrevFile.close()
+			azielevFile.close()
+		else:
+			azielevFile = open(azielevFilename, "w", encoding="utf-8")
+			azielevFile.write("")
+			azielevFile.close()
+
+		# Set up file stream for RINEX file output
+		conv._outputs[OBS]["fnm"] = rnxFilename
+		conv._outputs[OBS]["stm"] = open(rnxFilename, "w", encoding="utf-8")
+
+		# Countdown setup
+		currIntTime = waitTime
+		end_time = time.time() + waitTime
+
+		while time.time() < end_time:
+
+			# Countdown to end of epoch interval
+			countdown = int(end_time - time.time())
+			if countdown < int(currIntTime):
+				print(f"\r\t\t{countdown}\t\t", end="")
+				currIntTime = countdown
+
+			# Read UBXMessage from Sparkfun chip
+			_, msg = ubr.read()
 			
-			currEpoch = EPOCHMIN
-			rnxFilename = f"./RNX_SUCCESS/rinex/success{i}.rnx"
-			azimelevFilename = f"./RNX_SUCCESS/azielev/azimuth&elevation{i}.txt"
-			conv._outputs[OBS]["fnm"] = rnxFilename
-			conv._outputs[OBS]["stm"] = open(rnxFilename, "w", encoding="utf-8")
-			azimelevFile = open(azimelevFilename, "w", encoding="utf-8")
+			# If no UBXMessage was received, just continue to next loop
+			if msg == None:
+				continue
 
-			currIntTime = waitTime
+			# Azimuth/Elevation data is received from NAV-SAT messages
+			# Collect azielev data from msg
+			if (msg.identity == "NAV-SAT"):
+				azielevDict = {}
+				for i in range(1, msg.numSvs):
+					azielev = (getattr(msg, f"azim_{i:02d}"), getattr(msg, f"elev_{i:02d}"))
+					id = ""
+					match (getattr(msg, f"gnssId_{i:02d}")):
+						case 0:
+							id = f"G{getattr(msg, f"svId_{i:02d}"):02d}"
+						case 1:
+							id = f"S{(getattr(msg, f"svId_{i:02d}") - 100):02d}"
+						case 2:
+							id = f"E{getattr(msg, f"svId_{i:02d}"):02d}"
+						case 3:
+							id = f"C{getattr(msg, f"svId_{i:02d}"):02d}"
+						case 6:
+							id = f"R{getattr(msg, f"svId_{i:02d}"):02d}"
+						case _:
+							id = "???"
+					azielevDict[id] = azielev
 
-			end_time = time.time() + waitTime
-			while time.time() < end_time:
+				# Write azielev data w/ current epoch
+				azielevFile = open(azielevFilename, "a", encoding="utf-8")
+				currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
+				azielevFile.close()
 
-				countdown = int(end_time - time.time())
-				if countdown < int(currIntTime):
-					print(f"\r\t\t{countdown}\t\t", end="")
-					currIntTime = countdown
-
-				raw, msg = ubr.read()
-				
-				if msg == None:
-					continue
-					
-				if (msg.identity == "RXM-RAWX"):
-					currSec = int(msg.rcvTow)
-					if ((currSec % epochInterval) == 0):
-						input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
-					else:
-						input_prc = 0
-				else:
+			# RXM-RAWX is received every second
+			if (msg.identity == "RXM-RAWX"):
+				# only process epoch input every (epochInterval) seconds
+				currSec = int(msg.rcvTow)
+				if ((currSec % epochInterval) == 0):
 					input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
+				else:
+					input_prc = 0
+			else:
+				# process any other message identity
+				input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
 
-				if (msg.identity == "NAV-SAT"):
-					azimelevDict = {}
-					for j in range(1, msg.numSvs):
-						azimelev = (getattr(msg, f"azim_{j:02d}"), getattr(msg, f"elev_{j:02d}"))
-						id = ""
-						match (getattr(msg, f"gnssId_{j:02d}")):
-							case 0:
-								id = f"G{getattr(msg, f"svId_{j:02d}"):02d}"
-							case 1:
-								id = f"S{(getattr(msg, f"svId_{j:02d}") - 100):02d}"
-							case 2:
-								id = f"E{getattr(msg, f"svId_{j:02d}"):02d}"
-							case 3:
-								id = f"C{getattr(msg, f"svId_{j:02d}"):02d}"
-							case 6:
-								id = f"R{getattr(msg, f"svId_{j:02d}"):02d}"
-							case _:
-								id = "???"
-						azimelevDict[id] = azimelev
-						
-					currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
+			conv._outputs[OBS]["prc"] += input_prc
 
-				conv._outputs[OBS]["prc"] += input_prc
-				
-			currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
+		# Output files
+		conv.process_output_data(["O"])
+		conv._outputs[OBS]["stm"].close()
+		RNXformatEdit(rnxFilename)
+		correctazielev(rnxFilename, azielevFilename)
 
-			# Output RINEX file
-			conv.process_output_data(["O"])
-			conv._outputs[OBS]["stm"].close()
-			azimelevFile.close()
+		print()
+		quit = False
+		return rnxFilename, azielevFilename, conv, quit
 
-			RNXformatEdit(rnxFilename)
-			correctAzimElev(rnxFilename, azimelevFilename)
-			#subprocess.run(["sudo", "shutdown", "-h", "now"])
-			
-			print()
-			quit = False
-			return rnxFilename, azimelevFilename, conv, quit
-
+	# IF PROGRAM IS EXITED BEFORE COMPLETION
 	except KeyboardInterrupt:
+		# Write incomplete RINEX data
 		if (conv._outputs[OBS]["stm"].closed == False):
 			conv.process_output_data(["O"])
 			conv._outputs[OBS]["stm"].close()
-
 			RNXformatEdit(rnxFilename)
-			correctAzimElev(rnxFilename, azimelevFilename)
 
-		if (azimelevFile.closed == False):
-			currEpoch = writeAzimElev(conv, currEpoch, azimelevFile, azimelevDict)
-			azimelevFile.close()
-			correctAzimElev(rnxFilename, azimelevFilename)
+		# Write incomplete AZIELEV data
+		if (azielevFile.closed == False):
+			currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
+			azielevFile.close()
+		correctazielev(rnxFilename, azielevFilename)
 		
 		print()
 		quit = True
-		return rnxFilename, azimelevFilename, conv, quit
+		return rnxFilename, azielevFilename, conv, quit

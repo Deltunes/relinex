@@ -1,4 +1,0 @@
-wmctrl tips
-> wmctrl -l
-> DISPLAY=:0 wmctrl -l - list all running processes in CLI, use in SSH
-> DISPLAY=:0 wmctrl -c "deltunes@Fyberdeck: ~/leaflink" - deletes a terminal window

@@ -1,7 +1,0 @@
-tmux tips
-> tmux new -s s1
-> tmux list-sessions
-> tmux kill-session -t s1
-> tmux new -s test
-> tmux attach_session -t test
-
