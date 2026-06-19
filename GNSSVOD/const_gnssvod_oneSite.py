@@ -56,6 +56,12 @@ def RNXtoIMG(rnxFilepath):
 	ax.set_rlim([0,90])
 	ax.set_theta_zero_location("N")
 
+	Sfreq = []
+	for k in df.columns.tolist():
+		if k[0] == 'S':
+			Sfreq.append(k)
+	df['SNR_mean'] = df[Sfreq].mean(axis=1)
+
 	newdf = hemi.add_CellID(df)
 
 	hemi_average = newdf.groupby('CellID').mean()
@@ -66,12 +72,6 @@ def RNXtoIMG(rnxFilepath):
 	ipatches = pd.concat([patches,hemi_average],join='inner',axis=1)
 
 	# plotting with colored patches
-	Sfreq = []
-	for k in df.columns.tolist():
-		if k[0] == 'S':
-			Sfreq.append(k)
-	df['SNR_mean'] = Sfreq.mean(axis=1)
-
 	pc = PatchCollection(ipatches.Patches,array=ipatches['SNR_mean'],edgecolor='face',linewidth=1)
 	
 	pc.set_clim([25,50])
