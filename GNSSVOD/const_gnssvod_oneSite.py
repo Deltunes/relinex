@@ -66,9 +66,13 @@ def RNXtoIMG(rnxFilepath):
 	ipatches = pd.concat([patches,hemi_average],join='inner',axis=1)
 
 	# plotting with colored patches
+	Sfreq = []
 	for k in df.columns.tolist():
 		if k[0] == 'S':
-			pc = PatchCollection(ipatches.Patches,array=ipatches[k],edgecolor='face',linewidth=1)
+			Sfreq.append(k)
+	df['SNR_mean'] = Sfreq.mean(axis=1)
+
+	pc = PatchCollection(ipatches.Patches,array=ipatches['SNR_mean'],edgecolor='face',linewidth=1)
 	
 	pc.set_clim([25,50])
 	ax.add_collection(pc)
