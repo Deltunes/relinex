@@ -43,8 +43,8 @@ def RNXtoIMG(rnxFilepath):
 	plt.title(station_name)
 	
 	#plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite.png")
-	plt.savefig("IMAGE_SUCCESS/plot_oneSite.png")
-	plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite_{rnxFilename}.png")
+	plt.savefig("IMAGE_SUCCESS/plot_oneSite.png",bbox_inches='tight')
+	plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite_{rnxFilename}.png",bbox_inches='tight')
 
 	hemi = gv.hemibuild(4)
 	patches = hemi.patches()
