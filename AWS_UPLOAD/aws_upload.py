@@ -28,9 +28,7 @@ def upload_file(file_name, bucket, object_name=None):
 
 def aws_upload(fileset=set()):
 
-    upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS"]
-
-    fileset.add("IMAGE_SUCCESS/plot_oneSite_hemi.png")
+    upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS", "GIF_SUCCESS"]
 
     for dir in upload_dirs:
         for (root,dirs,files) in (os.walk(f"/home/deltunes/leaflink/{dir}",topdown=True)):

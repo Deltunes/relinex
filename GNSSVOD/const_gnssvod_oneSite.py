@@ -62,8 +62,6 @@ def RNXtoIMG(rnxFilepath):
 			Sfreq.append(k)
 	df['SNR_mean'] = df[Sfreq].mean(axis=1)
 
-	print(df)
-
 	newdf = hemi.add_CellID(df)
 
 	hemi_average = newdf.groupby('CellID').mean()

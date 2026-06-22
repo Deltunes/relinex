@@ -75,7 +75,7 @@ try:
 			else:
 				print(f"Warning: NETCDF file to DELETE could not be found at {rnxNetCDF}")
 
-		if i % 5 == 0:
+		if i % 6 == 0:
 			print("Uploading RINEX and plots to AWS storage")
 			try:
 				aws_fileset = aws_upload(aws_fileset)
