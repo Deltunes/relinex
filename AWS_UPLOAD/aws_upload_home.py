@@ -29,9 +29,9 @@ def upload_file(file_name, bucket, object_name=None):
 upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS"]
 
 for dir in upload_dirs:
-    for (root,dirs,files) in (os.walk(f"/home/deltunes/leaflink/leaflink_repo/{dir}",topdown=True)):
+    for (root,dirs,files) in (os.walk(f"/home/deltunes/leaflink/{dir}",topdown=True)):
         for file in files:
-            bucket_path = f"{("/".join(root.split("/")[5:]))}/{file}"
+            bucket_path = f"{("/".join(root.split("/")[4:]))}/{file}"
             print(bucket_path)
 
             upload_file(f"{root}/{file}", f"leaflink-rinex-doohickey", bucket_path)
