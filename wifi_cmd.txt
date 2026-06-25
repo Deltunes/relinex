@@ -1,0 +1,5 @@
+sudo nmcli device wifi rescan
+sudo nmcli device wifi list
+sudo nmcli device wifi connect 'Magic Picture Box 14' password 'Cheet!8!2024!'
+sudo nmcli connection delete 'Magic Picture Box 14'
+

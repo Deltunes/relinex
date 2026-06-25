@@ -1,0 +1,2 @@
+sudo nvim /boot/firmware/cmdline.txt
+change rotate value at end of line
