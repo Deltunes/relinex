@@ -1,0 +1,1 @@
+python3 -u master_doohickey.py 900 30 2>&1 | tee doohickey_output.txt

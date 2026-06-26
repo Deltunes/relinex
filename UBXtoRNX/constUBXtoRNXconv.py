@@ -183,7 +183,7 @@ def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
 			# Countdown to end of epoch interval
 			countdown = int(end_time - time.time())
 			if countdown < int(currIntTime):
-				print(f"\r\t\t{countdown}\t\t", end="")
+				#print(f"\r\t\t{countdown}\t\t", end="")
 				currIntTime = countdown
 
 			# Read UBXMessage from Sparkfun chip
