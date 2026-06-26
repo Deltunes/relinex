@@ -39,19 +39,18 @@ try:
         rnxFilepath = ""
         azielevFilepath = ""
 
-        rnxFilepath, azielevFilepath, conv, quit = UBXtoRNX(i, conv=conv, waitTime=waitTime, epochInterval=epochInterval)
+        rnxFilepath, azielevFilepath, _, quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval)
         rnxDeleteQ.append(rnxFilepath)
         azielevDeleteQ.append(azielevFilepath)
         i += 1
 
         subprocess.run(["vcgencmd","get_throttled"])
         subprocess.run(["vcgencmd","measure_temp"])
-        output = subprocess.run(["df","-h"])
-        print(output)
-        output = subprocess.run(["free","-h"])
+        subprocess.run(["free","-h"])
 
         # If program is quit during UBXtoRNX, end while loop
         if quit:
+            print("Quitting...")
             break
 
         # Plot RINEX file
@@ -90,5 +89,5 @@ try:
             print("Upload failed!")
         
 except KeyboardInterrupt:
-    print("Keyboard")
+    print("Keyboard Interrupt! Quitting...")
 

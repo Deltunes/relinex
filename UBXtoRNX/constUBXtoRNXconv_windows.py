@@ -135,7 +135,7 @@ def correctazielev(rnxFilename, azielevFilename):
 	azielevFile.write(correctedazielev)
 	azielevFile.close()
 
-def UBXtoRNX(conv, fileno, waitTime=60, epochInterval=10):
+def UBXtoRNX(fileno, conv=mkconv(), waitTime=60, epochInterval=10):
 	# Connect to Sparkfun chip through COMPORT
 	stream = Serial(COMPORT, 9600, timeout=10)
 	ubr = UBXReader(stream)
