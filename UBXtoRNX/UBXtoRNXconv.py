@@ -232,7 +232,7 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10):
 		correctazielev(rnxFilepath, azielevFilepath)
 
 		print()
-		quit = True
+		quit = False
 		return rnxFilepath, azielevFilepath, quit
 
 	# IF PROGRAM IS EXITED BEFORE COMPLETION
