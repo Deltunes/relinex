@@ -1,0 +1,3 @@
+gfzrnx -finp file1.rnx file2.rnx file3.rnx -fout merged.rnx -vo 3.05
+gfzrnx -finp station*.rnx -fout merged.rnx -vo 3.05
+gfzrnx -finp file1.rnx file2.rnx file3.rnx -fout merged.rnx -vo 3.05 -splice_direct
