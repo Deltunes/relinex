@@ -39,18 +39,19 @@ try:
         rnxFilepath = ""
         azielevFilepath = ""
 
-        rnxFilepath, azielevFilepath, _, quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval)
+        rnxFilepath, azielevFilepath, conv, quit = UBXtoRNX(i, conv=conv, waitTime=waitTime, epochInterval=epochInterval)
         rnxDeleteQ.append(rnxFilepath)
         azielevDeleteQ.append(azielevFilepath)
         i += 1
 
         subprocess.run(["vcgencmd","get_throttled"])
         subprocess.run(["vcgencmd","measure_temp"])
-        subprocess.run(["free","-h"])
+        output = subprocess.run(["df","-h"])
+        print(output)
+        output = subprocess.run(["free","-h"])
 
         # If program is quit during UBXtoRNX, end while loop
         if quit:
-            print("Quitting...")
             break
 
         # Plot RINEX file
@@ -84,7 +85,7 @@ try:
         #if i % 6 == 0:
         print("Uploading RINEX and plots to AWS storage")
         try:
-            aws_fileset = aws_upload(aws_fileset)
+            aws_fileset = aws_upload(0, aws_fileset)
         except:
             print("Upload failed!")
         

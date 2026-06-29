@@ -138,7 +138,7 @@ def correctazielev(rnxFilepath, azielevFilepath):
 	azielevFile.write(correctedazielev)
 	azielevFile.close()
 
-def UBXtoRNX(waitTime=60, epochInterval=10, quitAfter=0):
+def UBXtoRNX(fileno, waitTime=60, epochInterval=10):
 	# Connect to Sparkfun chip through COMPORT
 	stream = Serial(COMPORT, 9600, timeout=10)
 	ubr = UBXReader(stream)
@@ -146,99 +146,94 @@ def UBXtoRNX(waitTime=60, epochInterval=10, quitAfter=0):
 	print(f"RINEX FILE LENGTH: {waitTime} second(s)")
 	print(f"EPOCH INTERVAL: {epochInterval} second(s)")
 
-	fileno = 1
 	try:
-		while True:
-			conv = mkconv()
+		conv = mkconv()
 
-			print(f"RNX FILE: {fileno}")
-			fileno += 1
+		print(f"RNX FILE: {fileno}")
+		
+		# Set default invalid epoch value
+		currEpoch = EPOCHMIN
+
+		# Set RINEX and AZIELEV filenames
+		rnxFilepath = f"RNX_SUCCESS/success{fileno}.rnx"
+		azielevFilepath = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
+		azielevFile = open(azielevFilepath, "w", encoding="utf-8")
+		azielevFile.write("")
+		azielevFile.close()
+
+		# Set up file stream for RINEX file output
+		conv._outputs[OBS]["fnm"] = rnxFilepath
+		conv._outputs[OBS]["stm"] = open(rnxFilepath, "w", encoding="utf-8")
+
+		# Countdown setup
+		currIntTime = waitTime
+		end_time = time.time() + waitTime
+
+		while time.time() < end_time:
+
+			# Countdown to end of epoch interval
+			countdown = int(end_time - time.time())
+			if countdown < int(currIntTime):
+				print(f"\r\t\t{countdown}\t\t", end="")
+				currIntTime = countdown
+
+			# Read UBXMessage from Sparkfun chip
+			_, msg = ubr.read()
 			
-			# Set default invalid epoch value
-			currEpoch = EPOCHMIN
-
-			# Set RINEX and AZIELEV filenames
-			rnxFilepath = f"RNX_SUCCESS/success{fileno}.rnx"
-			azielevFilepath = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
-			azielevFile = open(azielevFilepath, "w", encoding="utf-8")
-			azielevFile.write("")
-			azielevFile.close()
-
-			# Set up file stream for RINEX file output
-			conv._outputs[OBS]["fnm"] = rnxFilepath
-			conv._outputs[OBS]["stm"] = open(rnxFilepath, "w", encoding="utf-8")
-
-			# Countdown setup
-			currIntTime = waitTime
-			end_time = time.time() + waitTime
-
-			while time.time() < end_time:
-
-				# Countdown to end of epoch interval
-				countdown = int(end_time - time.time())
-				if countdown < int(currIntTime):
-					print(f"\r\t\t{countdown}\t\t", end="")
-					currIntTime = countdown
-
-				# Read UBXMessage from Sparkfun chip
-				_, msg = ubr.read()
+			# If no UBXMessage was received, just continue to next loop
+			if msg == None:
+				continue
+			
+			# Azimuth/Elevation data is received from NAV-SAT messages
+			# Collect azielev data from msg
+			if (msg.identity == "NAV-SAT"):
+				azielevDict = {}
+				for j in range(1, msg.numSvs):
+					azielev = (getattr(msg, f"azim_{j:02d}"), getattr(msg, f"elev_{j:02d}"))
+					id = ""
+					match (getattr(msg, f"gnssId_{j:02d}")):
+						case 0:
+							id = f"G{getattr(msg, f"svId_{j:02d}"):02d}"
+						case 1:
+							id = f"S{(getattr(msg, f"svId_{j:02d}") - 100):02d}"
+						case 2:
+							id = f"E{getattr(msg, f"svId_{j:02d}"):02d}"
+						case 3:
+							id = f"C{getattr(msg, f"svId_{j:02d}"):02d}"
+						case 6:
+							id = f"R{getattr(msg, f"svId_{j:02d}"):02d}"
+						case _:
+							id = "???"
+					azielevDict[id] = azielev
 				
-				# If no UBXMessage was received, just continue to next loop
-				if msg == None:
-					continue
-				
-				# Azimuth/Elevation data is received from NAV-SAT messages
-				# Collect azielev data from msg
-				if (msg.identity == "NAV-SAT"):
-					azielevDict = {}
-					for j in range(1, msg.numSvs):
-						azielev = (getattr(msg, f"azim_{j:02d}"), getattr(msg, f"elev_{j:02d}"))
-						id = ""
-						match (getattr(msg, f"gnssId_{j:02d}")):
-							case 0:
-								id = f"G{getattr(msg, f"svId_{j:02d}"):02d}"
-							case 1:
-								id = f"S{(getattr(msg, f"svId_{j:02d}") - 100):02d}"
-							case 2:
-								id = f"E{getattr(msg, f"svId_{j:02d}"):02d}"
-							case 3:
-								id = f"C{getattr(msg, f"svId_{j:02d}"):02d}"
-							case 6:
-								id = f"R{getattr(msg, f"svId_{j:02d}"):02d}"
-							case _:
-								id = "???"
-						azielevDict[id] = azielev
-					
-					# Write azielev data w/ current epoch
-					azielevFile = open(azielevFilepath, "a", encoding="utf-8")
-					currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
-					azielevFile.close()
+				# Write azielev data w/ current epoch
+				azielevFile = open(azielevFilepath, "a", encoding="utf-8")
+				currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
+				azielevFile.close()
 
-				# RXM-RAWX is received every second
-				if (msg.identity == "RXM-RAWX"):
-					# only process epoch input every (epochInterval) seconds
-					currSec = int(msg.rcvTow)
-					if ((currSec % epochInterval) == 0):
-						input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
-					else:
-						input_prc = 0
-				else:
-					# process any other message identity
+			# RXM-RAWX is received every second
+			if (msg.identity == "RXM-RAWX"):
+				# only process epoch input every (epochInterval) seconds
+				currSec = int(msg.rcvTow)
+				if ((currSec % epochInterval) == 0):
 					input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
+				else:
+					input_prc = 0
+			else:
+				# process any other message identity
+				input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
 
-				conv._outputs[OBS]["prc"] += input_prc
-				
-			currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
+			conv._outputs[OBS]["prc"] += input_prc
 
-			# Output files
-			conv.process_output_data(["O"])
-			conv._outputs[OBS]["stm"].close()
-			RNXformatEdit(rnxFilepath)
-			correctazielev(rnxFilepath, azielevFilepath)
+		# Output files
+		conv.process_output_data(["O"])
+		conv._outputs[OBS]["stm"].close()
+		RNXformatEdit(rnxFilepath)
+		correctazielev(rnxFilepath, azielevFilepath)
 
-			if (quitAfter != 0):
-				if (fileno > quitAfter):
-					sys.exit()
+		print()
+		quit = True
+		return rnxFilepath, azielevFilepath, quit
 
 	# IF PROGRAM IS EXITED BEFORE COMPLETION
 	except KeyboardInterrupt:
@@ -254,7 +249,11 @@ def UBXtoRNX(waitTime=60, epochInterval=10, quitAfter=0):
 			azielevFile.close()
 		correctazielev(rnxFilepath, azielevFilepath)
 
-# Run UBXtoRNX, pass arguments
+		print()
+		quit = True
+		return rnxFilepath, azielevFilepath, quit
+
+"""# Run UBXtoRNX, pass arguments
 if len(sys.argv) > 3:
 	UBXtoRNX(int(sys.argv[1]),int(sys.argv[2]),int(sys.argv[3]))
 elif len(sys.argv) > 2:
@@ -262,4 +261,4 @@ elif len(sys.argv) > 2:
 elif len(sys.argv) > 1:
 	UBXtoRNX(int(sys.argv[1]))
 else:
-	UBXtoRNX()
+	UBXtoRNX()"""
