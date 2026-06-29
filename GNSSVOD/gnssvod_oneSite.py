@@ -15,91 +15,82 @@ def readFileDate():
 	fileDatetime = f"{datetimeSplit[1]}-{datetimeSplit[2]}-{datetimeSplit[3]} {datetimeSplit[4]}:{datetimeSplit[5]}:{datetimeSplit[6]}"
 	return fileDatetime
 
-pattern = {'rnxfile1':'RNX_SUCCESS/rinex/success1.rnx',
-           'rnxfile2':'RNX_SUCCESS/rinex/success2.rnx'}
+def RNXtoIMG(rnxFilepath):
+	pattern = {'rnxfile1':f'{rnxFilepath}'}
+	outputdir = {'rnxfile1':'GNSSVOD/nc/'}
+	keepvars = ['S?','S??']
+	gv.preprocess(pattern, interval='1s', keepvars=keepvars, outputdir=outputdir, overwrite=True)
 
-outputdir = {'rnxfile1':'GNSSVOD/nc/',
-             'rnxfile2':'GNSSVOD/nc/'}
+	# define how to make pairs, always give reference station first, matching the dictionary keys of 'pattern'
+	pairings={'gnssvod_test':('rnxfile1','rnxfile2')}
 
-keepvars = ['S?','S??']
+	# define where to save output data, matching the dictionary keys in 'pairings'
+	outputdir = {'gnssvod_test':'GNSSVOD/nc2/'}
 
-result = gv.preprocess(pattern, interval='1s', keepvars=keepvars, outputdir=outputdir, overwrite=True)
+	# define which variables to keep
+	keepvars = ['S*','Azimuth','Elevation']
 
-pattern={'rnxfile1':'GNSSVOD/nc/success1.nc', 
-         'rnxfile2':'GNSSVOD/nc/success2.nc'}
+	# run function
+	out = gv.gather_stations(pattern,pairings,timeintervals,keepvars=keepvars,outputdir=outputdir)
 
-# get time range
-startday = pd.to_datetime(readFileDate())
-timeintervals=pd.interval_range(start=startday, periods=2, freq='D', closed='left')
+	print("Opening nc2 dataset")
+	ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='nested',concat_dim='Epoch')
+	#ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='nested',concat_dim='Epoch')
 
-# define how to make pairs, always give reference station first, matching the dictionary keys of 'pattern'
-pairings={'gnssvod_test':('rnxfile1','rnxfile2')}
+	df = ds.to_dataframe().dropna(how='all').reorder_levels(["Station","Epoch","SV"]).sort_index()
 
-# define where to save output data, matching the dictionary keys in 'pairings'
-outputdir = {'gnssvod_test':'GNSSVOD/nc2/'}
+	# ALL SATELLITES, ONE SITE\
+	print("Subsetting Dataframe")
+	station_name = 'rnxfile1'
+	subdf = df.xs(station_name,level='Station')
+	
+	# initialize figure with polar axes
+	print("Plot setup")
+	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
 
-# define which variables to keep
-keepvars = ['S*','Azimuth','Elevation']
+	# polar plots need a radius and theta direction in radians
+	radius = 90-subdf.Elevation
+	theta = np.deg2rad(subdf.Azimuth)
+		
+	# plot each measurement and color by signal to noise ratio
+	for j in subdf.columns.tolist():
+		if j[0] == 'S':
+			hs = ax.scatter(theta,radius,c=subdf[j])
+	ax.set_rlim([0,90])
+	ax.set_theta_zero_location("N")
+	plt.colorbar(hs, shrink=0.5, label='SNR (L1)')
+	plt.title(station_name)
+	plt.savefig("IMAGE_SUCCESS/plot_oneSite.png")
 
-# run function
-out = gv.gather_stations(pattern,pairings,timeintervals,keepvars=keepvars,outputdir=outputdir)
+	hemi = gv.hemibuild(4)
+	patches = hemi.patches()
 
-print("Opening nc2 dataset")
-ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='nested',concat_dim='Epoch')
-#ds = xr.open_mfdataset('GNSSVOD/nc2/*.nc',combine='nested',concat_dim='Epoch')
+	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
+	pc = PatchCollection(patches.values,facecolor='none',linewidth=1)
+	ax.add_collection(pc)
+	ax.set_rlim([0,90])
+	ax.set_theta_zero_location("N")
 
-df = ds.to_dataframe().dropna(how='all').reorder_levels(["Station","Epoch","SV"]).sort_index()
+	newdf = hemi.add_CellID(df)
 
-# ALL SATELLITES, ONE SITE\
-print("Subsetting Dataframe")
-station_name = 'rnxfile1'
-subdf = df.xs(station_name,level='Station')
- 
-# initialize figure with polar axes
-print("Plot setup")
-fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
+	hemi_average = newdf.groupby(['CellID','Station']).mean()
 
-# polar plots need a radius and theta direction in radians
-radius = 90-subdf.Elevation
-theta = np.deg2rad(subdf.Azimuth)
-    
-# plot each measurement and color by signal to noise ratio
-for j in subdf.columns.tolist():
-	if j[0] == 'S':
-		hs = ax.scatter(theta,radius,c=subdf[j])
-ax.set_rlim([0,90])
-ax.set_theta_zero_location("N")
-plt.colorbar(hs, shrink=0.5, label='SNR (L1)')
-plt.title(station_name)
-plt.savefig("IMAGE_SUCCESS/plot_oneSite.png")
+	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
 
-hemi = gv.hemibuild(4)
-patches = hemi.patches()
+	# associate the mean values to the patches, join inner will drop patches with no data, making plotting slightly faster
+	ipatches = pd.concat([patches,hemi_average.xs(station_name, level='Station')],join='inner',axis=1)
 
-fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
-pc = PatchCollection(patches.values,facecolor='none',linewidth=1)
-ax.add_collection(pc)
-ax.set_rlim([0,90])
-ax.set_theta_zero_location("N")
+	# plotting with colored patches
+	for k in subdf.columns.tolist():
+		if k[0] == 'S':
+			pc = PatchCollection(ipatches.Patches,array=ipatches[k],edgecolor='face',linewidth=1)
+	pc.set_clim([25,50])
+	ax.add_collection(pc)
+	ax.set_rlim([0,90])
+	ax.set_theta_zero_location("N")
+	ax.set_title(station_name)
 
-newdf = hemi.add_CellID(df)
+	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05, label='SNR (L1)')
+	plt.savefig('IMAGE_SUCCESS/plot_oneSite_hemi.png',facecolor='white',transparent=False,bbox_inches='tight')
 
-hemi_average = newdf.groupby(['CellID','Station']).mean()
-
-fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
-
-# associate the mean values to the patches, join inner will drop patches with no data, making plotting slightly faster
-ipatches = pd.concat([patches,hemi_average.xs(station_name, level='Station')],join='inner',axis=1)
-
-# plotting with colored patches
-for k in subdf.columns.tolist():
-	if k[0] == 'S':
-		pc = PatchCollection(ipatches.Patches,array=ipatches[k],edgecolor='face',linewidth=1)
-pc.set_clim([25,50])
-ax.add_collection(pc)
-ax.set_rlim([0,90])
-ax.set_theta_zero_location("N")
-ax.set_title(station_name)
-
-plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05, label='SNR (L1)')
-plt.savefig('IMAGE_SUCCESS/plot_oneSite_hemi.png',facecolor='white',transparent=False,bbox_inches='tight')
+RNXtoIMG("concat/success16-17.rnx")

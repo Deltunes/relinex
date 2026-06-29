@@ -1,11 +1,13 @@
 import pandas as pd
 
-def azim_elev_fromFile(fileno: str):
-	if fileno == "%":
-		azimElevFilename = f"RNX_SUCCESS/azielev/fodder%.txt"
+def azim_elev_fromFile(fileno: str, fileno2=-1):
+	fileno = int(fileno)
+	if fileno2 > -1:
+		fileno2 = int(fileno2)
+		azimElevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}-{fileno2}.txt"
 	else:
-		fileno = int(fileno)
 		azimElevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
+	
 	azimElevFile = open(azimElevFilename, "r", encoding="utf-8")
 	azimElevData = azimElevFile.readlines()
 	azimElevFile.close()
