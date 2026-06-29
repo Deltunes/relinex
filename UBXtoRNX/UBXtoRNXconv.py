@@ -155,7 +155,7 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10):
 		currEpoch = EPOCHMIN
 
 		# Set RINEX and AZIELEV filenames
-		rnxFilepath = f"RNX_SUCCESS/success{fileno}.rnx"
+		rnxFilepath = f"RNX_SUCCESS/rinex/success{fileno}.rnx"
 		azielevFilepath = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
 		azielevFile = open(azielevFilepath, "w", encoding="utf-8")
 		azielevFile.write("")
