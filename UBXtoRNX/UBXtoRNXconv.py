@@ -148,15 +148,18 @@ def renameFilesWithEpoch(rnxFilepath, azielevFilepath):
 		if azielevData[line][0] == ">":
 			epochLines.append(azielevData[line])
 
-	firstEpoch = epochLines[0][2:].replace('\n','').replace("/","-")
-	lastEpoch = epochLines[-1][2:].replace('\n','').replace("/","-")
+	firstEpoch = epochLines[0][2:].replace('\n','').replace("/","_")
+	lastEpoch = epochLines[-1][2:].replace('\n','').replace("/","_")
 
 	rnxFileSplit = rnxFilepath.split("/")
-	#rnxPrefix = rnxFileSplit[-1].split(".")[0][0:7]
-	rnxFileSplit[-1] = f"success_{firstEpoch}_{lastEpoch}.rnx"
+	rnxFileSplit[-1] = f"success_{firstEpoch}-{lastEpoch}.rnx"
 	rnxFilepathNew = "/".join(rnxFileSplit)
-	
 	subprocess.run(["mv", f"{rnxFilepath}", f"{rnxFilepathNew}"])
+
+	azielevFileSplit = azielevFilepath.split("/")
+	azielevFileSplit[-1] = f"azimuth&elevation_{firstEpoch}-{lastEpoch}.rnx"
+	azielevFilepathNew = "/".join(azielevFileSplit)
+	subprocess.run(["mv", f"{azielevFilepath}", f"{azielevFilepathNew}"])
 
 def UBXtoRNX(fileno, waitTime=60, epochInterval=10):
 	# Connect to Sparkfun chip through COMPORT
