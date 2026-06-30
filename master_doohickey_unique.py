@@ -16,8 +16,6 @@ aws_fileset = set()
 # Make any missing directories
 os.makedirs("RNX_SUCCESS/rinex", exist_ok=True)
 os.makedirs("RNX_SUCCESS/azielev", exist_ok=True)
-os.makedirs("IMAGE_SUCCESS/scatter", exist_ok=True)
-os.makedirs("IMAGE_SUCCESS/hemi", exist_ok=True)
 
 # Take command line args as input for waitTime and epochInterval
 if len(sys.argv) > 2:
