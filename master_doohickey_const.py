@@ -5,7 +5,7 @@ sys.path.insert(1, 'UBXtoRNX')
 sys.path.insert(2, 'GNSSVOD')
 sys.path.insert(1, 'AWS_UPLOAD')
 from constUBXtoRNXconv import UBXtoRNX, mkconv
-from const_gnssvod_oneSite import RNXtoIMG
+from gnssvod_oneSite import RNXtoIMG
 from aws_upload import aws_upload
 from collections import deque
 

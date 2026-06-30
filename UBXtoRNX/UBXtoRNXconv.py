@@ -157,7 +157,7 @@ def renameFilesWithEpoch(rnxFilepath, azielevFilepath):
 	subprocess.run(["mv", f"{rnxFilepath}", f"{rnxFilepathNew}"])
 
 	azielevFileSplit = azielevFilepath.split("/")
-	azielevFileSplit[-1] = f"azimuth&elevation_{firstEpoch}-{lastEpoch}.rnx"
+	azielevFileSplit[-1] = f"azimuth&elevation_{firstEpoch}-{lastEpoch}.txt"
 	azielevFilepathNew = "/".join(azielevFileSplit)
 	subprocess.run(["mv", f"{azielevFilepath}", f"{azielevFilepathNew}"])
 

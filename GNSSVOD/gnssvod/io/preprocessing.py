@@ -382,23 +382,20 @@ def add_azi_ele(filename: str,
     # CHANGED CODE HERE
     # calculate the gnss parameters (including azimuth and elevation)
     #gnssdf = gnssDataframe(obs,orbit,cut_off=-10)
-    fileno=""
-    fileno2=""
-    filerange = False
-    digits="0123456789"
+    epochRange = ""
+    epochNums = False
+    #digits="0123456789"
     print(filename)
     for char in filename:
-        if char == '-':
-            filerange = True
-        elif char in digits and filerange == False:
-            fileno+=char
-        elif char in digits and filerange == True:
-            fileno2+=char
+        if char == ".":
+            break
+        if epochNums == True:
+            epochRange += char
+        elif char == "_" and epochNums == False:
+            epochNums = True
 
-    if filerange:
-        azimelevdf = azim_elev_fromFile(fileno, fileno2)
-    else:
-        azimelevdf = azim_elev_fromFile(fileno)
+    print(epochRange)
+    azimelevdf = azim_elev_fromFile(epochRange)
 
     # add the gnss parameters to the observation dataframe
     obs.observation = obs.observation.join(azimelevdf)
