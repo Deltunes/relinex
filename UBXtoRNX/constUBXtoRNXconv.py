@@ -3,6 +3,7 @@ from serial import Serial
 from pyubx2 import UBXReader
 from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import OBS, EPOCHMIN
+import subprocess
 
 # 	Lists serial ports to determine COMPORT
 # 	Uncomment if needed
@@ -111,7 +112,7 @@ def correctazielev(rnxFilepath, azielevFilepath):
 			currEpochSplit[4] = f"{int(currEpochSplit[4]):02d}"
 			currEpochSplit[5] = f"{int(currEpochSplit[5]):02d}"
 			currEpochSplit[6] = f"{float(currEpochSplit[6]):09f}"
-			currEpochLine = "/".join(currEpochSplit)
+			currEpochLine = "-".join(currEpochSplit)
 			currEpochLine = currEpochLine[:-7]
 		# Else line is satellite data
 		else:
@@ -138,6 +139,30 @@ def correctazielev(rnxFilepath, azielevFilepath):
 	azielevFile = open(azielevFilepath, "w", encoding="utf-8")
 	azielevFile.write(correctedazielev)
 	azielevFile.close()
+
+def renameFilesWithEpoch(rnxFilepath, azielevFilepath):
+	azielevFile = open(azielevFilepath, "r", encoding="utf-8")
+	azielevData = azielevFile.readlines()
+	azielevFile.close()
+
+	epochLines = []
+	for line in range(len(azielevData)-1):
+		if azielevData[line][0] == ">":
+			epochLines.append(azielevData[line])
+
+	firstEpoch = epochLines[0][2:].replace('\n','').replace("/","-")
+	lastEpoch = epochLines[-1][2:].replace('\n','').replace("/","-")
+
+	rnxFileSplit = rnxFilepath.split("/")
+	#rnxPrefix = rnxFileSplit[-1].split(".")[0][0:7]
+	rnxFileSplit[-1] = f"success_{firstEpoch}_{lastEpoch}.rnx"
+	rnxFilepathNew = "/".join(rnxFileSplit)
+
+	print(rnxFilepath)
+	print(rnxFilepathNew)
+
+	subprocess.run(["mv", f"{rnxFilepath}", f"{rnxFilepathNew}"])
+
 
 def UBXtoRNX(fileno, conv=mkconv(), waitTime=60, epochInterval=10):
 	# Connect to Sparkfun chip through COMPORT
@@ -239,6 +264,7 @@ def UBXtoRNX(fileno, conv=mkconv(), waitTime=60, epochInterval=10):
 		conv._outputs[OBS]["stm"].close()
 		RNXformatEdit(rnxFilepath)
 		correctazielev(rnxFilepath, azielevFilepath)
+		renameFilesWithEpoch(rnxFilepath, azielevFilepath)
 
 		print()
 		quit = False
@@ -257,7 +283,10 @@ def UBXtoRNX(fileno, conv=mkconv(), waitTime=60, epochInterval=10):
 			currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
 			azielevFile.close()
 		correctazielev(rnxFilepath, azielevFilepath)
+		renameFilesWithEpoch(rnxFilepath, azielevFilepath)
 		
 		print()
 		quit = True
 		return rnxFilepath, azielevFilepath, conv, quit
+
+#renameFilesWithEpoch("RNX_SUCCESS/rinex/success1.rnx", "RNX_SUCCESS/azielev/azimuth&elevation1.txt")

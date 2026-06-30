@@ -1,12 +1,12 @@
 import pandas as pd
 
-def azim_elev_fromFile(fileno: str, fileno2=-1):
+def azim_elev_fromFile(fileno: str, fileno2=""):
 	fileno = int(fileno)
-	if fileno2 > -1:
-		fileno2 = int(fileno2)
-		azimElevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}-{fileno2}.txt"
-	else:
+	if fileno2 == "":
 		azimElevFilename = f"RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
+	else:
+		azimElevFilename = f"RNX_SUCCESS/concat/azimuth&elevation{fileno}-{fileno2}.txt"
+		
 	
 	azimElevFile = open(azimElevFilename, "r", encoding="utf-8")
 	azimElevData = azimElevFile.readlines()
@@ -17,7 +17,7 @@ def azim_elev_fromFile(fileno: str, fileno2=-1):
 	for line in azimElevData:
 		if line[0] == ">":
 			epoch = ""
-			epochSplit = line.strip("\n").split("/")
+			epochSplit = line.strip("\n").split("-")
 			epoch = f"{epochSplit[1]}-{epochSplit[2]}-{epochSplit[3]} {epochSplit[4]}:{epochSplit[5]}:{epochSplit[6]}"
 		else:
 			info = line.strip().split("/")

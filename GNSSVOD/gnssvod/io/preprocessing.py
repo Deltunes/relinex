@@ -385,14 +385,15 @@ def add_azi_ele(filename: str,
     fileno=""
     fileno2=""
     filerange = False
-    digits="0123456789%"
+    digits="0123456789"
+    print(filename)
     for char in filename:
         if char == '-':
             filerange = True
         elif char in digits and filerange == False:
             fileno+=char
         elif char in digits and filerange == True:
-            fileno+=char
+            fileno2+=char
 
     if filerange:
         azimelevdf = azim_elev_fromFile(fileno, fileno2)
