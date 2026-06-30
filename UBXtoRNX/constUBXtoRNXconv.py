@@ -157,10 +157,7 @@ def renameFilesWithEpoch(rnxFilepath, azielevFilepath):
 	#rnxPrefix = rnxFileSplit[-1].split(".")[0][0:7]
 	rnxFileSplit[-1] = f"success_{firstEpoch}_{lastEpoch}.rnx"
 	rnxFilepathNew = "/".join(rnxFileSplit)
-
-	print(rnxFilepath)
-	print(rnxFilepathNew)
-
+	
 	subprocess.run(["mv", f"{rnxFilepath}", f"{rnxFilepathNew}"])
 
 
