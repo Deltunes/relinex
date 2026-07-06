@@ -1,13 +1,24 @@
 import os
 import subprocess
 from datetime import datetime
+import numpy as np
 
 def concatFilelist(rnxFileDir: str, azielevFileDir: str):
 
     outputFilepath = "RNX_SUCCESS/concat"
 
-    rnxFilelist, azielevFilelist = getFilelist(rnxFileDir, azielevFileDir)
+    rnxFileDict, azielevFileDict = getFilelist(rnxFileDir, azielevFileDir)
 
+    rnxFileTupleSorted = sorted(rnxFileDict.items())
+    rnxFilelist = []
+    for tuple in rnxFileTupleSorted:
+         rnxFilelist.append(tuple[1])
+
+    azielevFileTupleSorted = sorted(azielevFileDict.items())
+    azielevFilelist = []
+    for tuple in azielevFileTupleSorted:
+         azielevFilelist.append(tuple[1])
+         
     # RINEX CONCAT
     cmdstr = []
     cmdstr.append("./CONCAT_FILES/gfzrnx")
@@ -49,7 +60,6 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str):
     print(f"first - {epochFirst}")
     print(f"last - {epochLast}")
     subprocess.run(cmdstr)
-    #subprocess.run(["./concat/gfzrnx", "-finp", f"{rnxFilepath1}", f"{rnxFilepath2}", "-fout", f"concat/success{filerange}.rnx"])
 
     # AZIMUTH & ELEVATION CONCAT
     azielevConcat = open(f"{outputFilepath}/azimuth&elevation_{epochFirst}-{epochLast}.txt", "w", encoding="utf-8")
@@ -58,35 +68,34 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str):
     for azielevFilepath in azielevFilelist:
         azielevFile = open(azielevFilepath, "r", encoding="utf-8")
         azielevData = azielevFile.read()
-        print(azielevData)
         azielevFile.close()
 
-        azielevConcat = open(f"{outputFilepath}/azimuth&elevation{epochFirst}-{epochLast}.txt", "a", encoding="utf-8")
+        azielevConcat = open(f"{outputFilepath}/azimuth&elevation_{epochFirst}-{epochLast}.txt", "a", encoding="utf-8")
         azielevConcat.write(azielevData)
         azielevConcat.close()
 
 def getFilelist(rnxfiledir: str, azielevfiledir: str):
-    rnxFilelist = set()
-    azielevFilelist = set()
+    rnxFileDict = dict()
+    azielevFileDict = dict()
     for filename in os.listdir(rnxfiledir):
         filenameSplit = filename.split(".")
         extension = filenameSplit[-1]
         if extension == "rnx" and filenameSplit[0][0:7] == "success":
-            #print(filenameSplit[0][7:])
+            firstDatetimeStr = filenameSplit[0][8:].split("-")[0]
+            firstDatetime = datetime.strptime(firstDatetimeStr, "%Y_%m_%d_%H_%M_%S")
+            rnxFileDict[firstDatetime] = f"{rnxfiledir}/{filename}"
             #print(f"{rnxfiledir}/{filename}")
-            rnxFilelist.add(f"{rnxfiledir}/{filename}")
 
-    print("TEST????")
-    print(os.listdir(azielevfiledir))
     for filename in os.listdir(azielevfiledir):
-        print(filename)
         filenameSplit = filename.split(".")
         extension = filenameSplit[-1]
         if extension == "txt" and filenameSplit[0][0:17] == "azimuth&elevation":
-            print(f"{azielevfiledir}/{filename}")
-            azielevFilelist.add(f"{azielevfiledir}/{filename}")
-    
-    return rnxFilelist, azielevFilelist
+            firstDatetimeStr = filenameSplit[0][18:].split("-")[0]
+            firstDatetime = datetime.strptime(firstDatetimeStr, "%Y_%m_%d_%H_%M_%S")
+            azielevFileDict[firstDatetime] = f"{azielevfiledir}/{filename}"
+            #print(f"{azielevfiledir}/{filename}")
+
+    return rnxFileDict, azielevFileDict
 
 def RNXformatEdit(rnxFilepath):
 	# Reformat RINEX file to work with GNSSVODs
@@ -101,6 +110,5 @@ def RNXformatEdit(rnxFilepath):
 		else:
 			rplcRNX.write(line)
 	rplcRNX.close()
-
 
 concatFilelist("RNX_SUCCESS/rinex", "RNX_SUCCESS/azielev")

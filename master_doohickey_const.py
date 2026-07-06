@@ -3,7 +3,7 @@ import os
 import subprocess
 sys.path.insert(1, 'UBXtoRNX')
 sys.path.insert(2, 'GNSSVOD')
-sys.path.insert(1, 'AWS_UPLOAD')
+sys.path.insert(3, 'AWS_UPLOAD')
 from constUBXtoRNXconv import UBXtoRNX, mkconv
 from gnssvod_oneSite import RNXtoIMG
 from aws_upload import aws_upload

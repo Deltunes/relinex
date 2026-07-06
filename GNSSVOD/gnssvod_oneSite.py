@@ -86,4 +86,4 @@ def RNXtoIMG(rnxFilepath):
 	plt.savefig(f"IMAGE_SUCCESS/hemi/plot_oneSite_hemi_{rnxFilename}.png",facecolor='white',transparent=False,bbox_inches='tight')
 	plt.close()
 
-RNXtoIMG("concat/success1-65.rnx")
+#RNXtoIMG("RNX_SUCCESS/concat/success_2026_06_30_19_56_42-2026_07_02_14_25_42.rnx")

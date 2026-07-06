@@ -11,7 +11,7 @@ def azim_elev_fromFile(epochRange):
 	for line in azimElevData:
 		if line[0] == ">":
 			epoch = ""
-			epochSplit = line.strip("\n").split("-")
+			epochSplit = line.strip("\n").split("/")
 			epoch = f"{epochSplit[1]}-{epochSplit[2]}-{epochSplit[3]} {epochSplit[4]}:{epochSplit[5]}:{epochSplit[6]}"
 		else:
 			info = line.strip().split("/")
