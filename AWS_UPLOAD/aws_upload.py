@@ -30,6 +30,8 @@ def aws_upload(output_type, fileset=set()):
 
     upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS", "GIF_SUCCESS"]
 
+    print(upload_dirs)
+
     for dir in upload_dirs:
         for (root,dirs,files) in (os.walk(f"/home/deltunes/leaflink/{dir}",topdown=True)):
             for file in files:
@@ -42,3 +44,5 @@ def aws_upload(output_type, fileset=set()):
                     if upload_file(f"{root}/{file}", f"leaflink-rinex-doohickey", bucket_path) == True:
                         fileset.add(bucket_path)
     return fileset
+
+aws_upload(1)

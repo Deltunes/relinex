@@ -26,10 +26,10 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str):
     prevRNXOutput = None
     prevAzielevOutput = None
     for i in range(len(rnxFilelist)):
-        subprocess.run(["vcgencmd","get_throttled"])
-        subprocess.run(["vcgencmd","measure_temp"])
-        subprocess.run(["free","-h"])
-        
+        #subprocess.run(["vcgencmd","get_throttled"])
+        #subprocess.run(["vcgencmd","measure_temp"])
+        #subprocess.run(["free","-h"])
+
         rnxFileNew = rnxFilelist[i]
 
         # RINEX CONCAT
@@ -109,6 +109,7 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str):
         azielevOutput.close()
         prevAzielevOutput = outputFilepathAzielev
 
+        print(outputFilepathRNX)
         RNXtoIMG(outputFilepathRNX)
 
 def getFilelist(rnxfiledir: str, azielevfiledir: str):
