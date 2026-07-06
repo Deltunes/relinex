@@ -35,7 +35,7 @@ def mkconv():
         comments=[],
     )
 
-def UBXtoNAV(fileno, waitTime=60, epochInterval=10):
+def UBXtoNAV(fileno, waitTime=600, epochInterval=30):
     # Connect to Sparkfun chip through COMPORT
     stream = Serial(COMPORT, 9600, timeout=10)
     ubr = UBXReader(stream)
@@ -92,7 +92,7 @@ def UBXtoNAV(fileno, waitTime=60, epochInterval=10):
             conv._outputs[NAV]["prc"] += input_prc
 
         # Output files
-        conv.process_output_data(["O"])
+        conv.process_output_data(["N"])
         conv._outputs[NAV]["stm"].close()
 
         return rnxFilepath
