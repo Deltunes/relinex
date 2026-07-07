@@ -5,13 +5,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 
-def RNXtoIMG(rnxFilepath):
+def RNXtoIMG(rnxFilepath, outputPath="."):
 	# Get name of file, no format
 	rnxFilename = rnxFilepath.split("/")[-1].split(".")[0]
+	rnxEpochRange = " - ".join(rnxFilename[8:].split("-"))
 
 	# Preprocess RINEX data to netCDF file
 	pattern = {'rnxfile1':f'{rnxFilepath}'}
-	outputdir = {'rnxfile1':'GNSSVOD/nc/'}
+	outputdir = {'rnxfile1':f'GNSSVOD/nc/'}
 	keepvars = ['S?','S??']
 	gv.preprocess(pattern, interval='1s', keepvars=keepvars, outputdir=outputdir, overwrite=True)
 
@@ -23,7 +24,6 @@ def RNXtoIMG(rnxFilepath):
 	# Plotting netCDF data
 	# ALL SATELLITES, ONE SITE
 	print("Plotting Data")
-	station_name = 'rnxfile1'
 	
 	# initialize figure with polar axes
 	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
@@ -38,23 +38,15 @@ def RNXtoIMG(rnxFilepath):
 			hs = ax.scatter(theta,radius,c=df[j])
 	ax.set_rlim([0,90])
 	ax.set_theta_zero_location("N")
-
-	plt.colorbar(hs, shrink=0.5, label='SNR (L1)')
-	plt.title(station_name)
+	plt.title(rnxEpochRange)
+	plt.colorbar(hs, ax=ax, location='bottom', shrink=0.5, pad=0.05)
 	
-	#plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite.png")
-	plt.savefig("IMAGE_SUCCESS/plot_oneSite.png",bbox_inches='tight')
-	plt.savefig(f"IMAGE_SUCCESS/scatter/plot_oneSite_{rnxFilename}.png",bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/plot_oneSite.png",bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/scatter/plot_oneSite_{rnxFilename}.png",bbox_inches='tight')
+	plt.close(fig)
 
 	hemi = gv.hemibuild(4)
 	patches = hemi.patches()
-
-	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
-	pc = PatchCollection(patches.values,facecolor='none',linewidth=1)
-
-	ax.add_collection(pc)
-	ax.set_rlim([0,90])
-	ax.set_theta_zero_location("N")
 
 	Sfreq = []
 	for k in df.columns.tolist():
@@ -76,14 +68,12 @@ def RNXtoIMG(rnxFilepath):
 	
 	pc.set_clim([25,50])
 	ax.add_collection(pc)
+	
 	ax.set_rlim([0,90])
 	ax.set_theta_zero_location("N")
-	ax.set_title(station_name)
-	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05, label='SNR (L1)')
+	ax.set_title(rnxEpochRange)
+	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05)
 
-	#plt.savefig('IMAGE_SUCCESS/hemi/plot_oneSite_hemi.png',facecolor='white',transparent=False,bbox_inches='tight')
-	plt.savefig("IMAGE_SUCCESS/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
-	plt.savefig(f"IMAGE_SUCCESS/hemi/plot_oneSite_hemi_{rnxFilename}.png",facecolor='white',transparent=False,bbox_inches='tight')
-	plt.close()
-
-#RNXtoIMG("RNX_SUCCESS/concat/success_2026_06_30_19_56_42-2026_07_02_14_25_42.rnx")
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/hemi/plot_oneSite_hemi_{rnxFilename}.png",facecolor='white',transparent=False,bbox_inches='tight')
+	plt.close(fig)

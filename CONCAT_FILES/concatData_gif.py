@@ -7,9 +7,8 @@ import numpy as np
 sys.path.insert(1, 'GNSSVOD')
 from gnssvod_oneSite import RNXtoIMG
 
-def concatFilelist(rnxFileDir: str, azielevFileDir: str):
-
-    outputFilepath = "RNX_SUCCESS/concat"
+def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
+    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat"
 
     rnxFileDict, azielevFileDict = getFilelist(rnxFileDir, azielevFileDir)
 
@@ -23,70 +22,76 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str):
     for tuple in azielevFileTupleSorted:
          azielevFilelist.append(tuple[1])
          
+    prevRNXOutput = None
+    prevAzielevOutput = None
+
+    epochFirst = datetime.max
+    epochLast = datetime.min
+
+
     for i in range(len(rnxFilelist)):
-        rnxFilelistCut = rnxFilelist[0:i+1]
+        rnxFileNew = rnxFilelist[i]
+        rnxFilename = rnxFileNew.split("/")[-1].split(".")[0]
+        RNXformatEdit(rnxFileNew)
 
-        # RINEX CONCAT
-        cmdstr = []
-        cmdstr.append("./CONCAT_FILES/gfzrnx")
-        cmdstr.append("-finp")
-
-        epochFirst = datetime.max
-        epochLast = datetime.min
+        epochRange = ""
+        epochNums = False
+        for char in rnxFilename:
+            if char == ".":
+                break
+            if epochNums == True:
+                epochRange += char
+            elif char == "_" and epochNums == False:
+                epochNums = True
         
-        for rnxFilepath in rnxFilelistCut:
-            RNXformatEdit(rnxFilepath)
+        epochSplit = epochRange.split("-")
+        epoch1 = datetime.strptime(epochSplit[0], "%Y_%m_%d_%H_%M_%S")
+        epoch2 = datetime.strptime(epochSplit[1], "%Y_%m_%d_%H_%M_%S")
 
-            rnxFilename = rnxFilepath.split("/")[-1].split(".")[0]
+        if epoch1 < epochFirst or epochFirst == datetime.max:
+            epochFirst = epoch1
+        if epoch2 > epochLast or epochLast == datetime.min:
+            epochLast = epoch2
 
-            epochRange = ""
-            epochNums = False
-            for char in rnxFilename:
-                if char == ".":
-                    break
-                if epochNums == True:
-                    epochRange += char
-                elif char == "_" and epochNums == False:
-                    epochNums = True
-            
-            epochSplit = epochRange.split("-")
-            epoch1 = datetime.strptime(epochSplit[0], "%Y_%m_%d_%H_%M_%S")
-            epoch2 = datetime.strptime(epochSplit[1], "%Y_%m_%d_%H_%M_%S")
+        epochFirstStr = epochFirst.strftime("%Y_%m_%d_%H_%M_%S")
+        epochLastStr = epochLast.strftime("%Y_%m_%d_%H_%M_%S")
+        outputFilepathRNX = f"{outputFilepath}/success_{epochFirstStr}-{epochLastStr}.rnx"
 
-            if epoch1 < epochFirst or epochFirst == datetime.max:
-                epochFirst = epoch1
-            if epoch2 > epochLast or epochLast == datetime.min:
-                epochLast = epoch2
-
-            cmdstr.append(rnxFilepath)
-
-        epochFirst = epochFirst.strftime("%Y_%m_%d_%H_%M_%S")
-        epochLast = epochLast.strftime("%Y_%m_%d_%H_%M_%S")
-
+        cmdstr = []
+        cmdstr.append(f"CONCAT_FILES/gfzrnx")
+        cmdstr.append("-finp")
+        if prevRNXOutput:
+             cmdstr.append(prevRNXOutput)
+        cmdstr.append(rnxFileNew)
         cmdstr.append("-fout")
-        outputFilepathRNX = f"{outputFilepath}/success_{epochFirst}-{epochLast}.rnx"
         cmdstr.append(outputFilepathRNX)
-        print(f"first - {epochFirst}")
-        print(f"last - {epochLast}")
-        subprocess.run(cmdstr)
+
+        print(f"first - {epochFirstStr}")
+        print(f"last - {epochLastStr}")
+        subprocess.run(cmdstr, capture_output=True)
+
+        prevRNXOutput = outputFilepathRNX
 
         # AZIMUTH & ELEVATION CONCAT
-        azielevConcat = open(f"{outputFilepath}/azimuth&elevation_{epochFirst}-{epochLast}.txt", "w", encoding="utf-8")
-        azielevConcat.write("")
-        azielevConcat.close()
-        for azielevFilepath in azielevFilelist:
-            azielevFile = open(azielevFilepath, "r", encoding="utf-8")
-            azielevData = azielevFile.read()
-            azielevFile.close()
+        outputFilepathAzielev = f"{outputFilepath}/azimuth&elevation_{epochFirstStr}-{epochLastStr}.txt"
+        azielevOutput = open(outputFilepathAzielev, "w", encoding="utf-8")
 
-            azielevConcat = open(f"{outputFilepath}/azimuth&elevation_{epochFirst}-{epochLast}.txt", "a", encoding="utf-8")
-            azielevConcat.write(azielevData)
-            azielevConcat.close()
+        if prevAzielevOutput:
+            prev = open(prevAzielevOutput, "r", encoding="utf-8")
+            for line in prev:
+                azielevOutput.write(line)
+            prev.close()
 
-        
-        RNXtoIMG(outputFilepathRNX)
+        new = open(azielevFilelist[i], "r", encoding="utf-8")
+        for line in new:
+            azielevOutput.write(line)
+        new.close()
 
-        
+        azielevOutput.close()
+        prevAzielevOutput = outputFilepathAzielev
+
+        RNXtoIMG(outputFilepathRNX, outputPath)
+        print()
 
 def getFilelist(rnxfiledir: str, azielevfiledir: str):
     rnxFileDict = dict()

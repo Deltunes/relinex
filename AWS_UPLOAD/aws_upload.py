@@ -26,23 +26,19 @@ def upload_file(file_name, bucket, object_name=None):
         return False
     return True
 
-def aws_upload(output_type, fileset=set()):
-
-    upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS", "GIF_SUCCESS"]
-
-    print(upload_dirs)
+def aws_upload(fileset=set(), outputPath="."):
+    upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS/rinex","RNX_SUCCESS/azielev", "GIF_SUCCESS", "NAV_SUCCESS"]
 
     for dir in upload_dirs:
-        for (root,dirs,files) in (os.walk(f"/home/deltunes/leaflink/{dir}",topdown=True)):
+        for (root,dirs,files) in (os.walk(f"{outputPath}/{dir}",topdown=True)):
             for file in files:
-                if output_type == 0:
-                    bucket_path = f"const/{("/".join(root.split("/")[4:]))}/{file}"
-                elif output_type == 1:
-                    bucket_path = f"unique/{("/".join(root.split("/")[4:]))}/{file}"
+                print(file)
+                bucket_path = f"./{("/".join(root.split("/")[4:]))}/{file}"
                 if bucket_path not in fileset:
                     print(bucket_path)
                     if upload_file(f"{root}/{file}", f"leaflink-rinex-doohickey", bucket_path) == True:
                         fileset.add(bucket_path)
     return fileset
 
-aws_upload(1)
+if __name__ == "__main__":
+    aws_upload()

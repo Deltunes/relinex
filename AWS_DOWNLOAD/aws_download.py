@@ -1,8 +1,10 @@
 import subprocess
 
-cmdstr = "aws s3 cp s3://leaflink-rinex-doohickey/unique/RNX_SUCCESS/rinex/ ./RNX_SUCCESS/rinex/ --recursive"
-subprocess.run(cmdstr.split(" "))
-cmdstr = "aws s3 cp s3://leaflink-rinex-doohickey/unique/RNX_SUCCESS/azielev/ ./RNX_SUCCESS/azielev/ --recursive"
-subprocess.run(cmdstr.split(" "))
+def aws_download(outputPath="."):
+    dirs = ["RNX_SUCCESS/rinex","RNX_SUCCESS/azielev", "NAV_SUCCESS", "GIF_SUCCESS", "IMAGE_SUCCESS"]
+    for dir in dirs:
+        cmdstr = f"aws s3 cp s3://leaflink-rinex-doohickey/{dir}/ {outputPath}/{dir}/ --recursive"
+        subprocess.run(cmdstr, shell=True, check=True)
 
-#aws s3 rm s3://your-bucket-name/folder-name/ --recursive
+if __name__ == "__main__":
+    aws_download()

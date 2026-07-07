@@ -1,7 +1,10 @@
 import pandas as pd
 
 def azim_elev_fromFile(epochRange):
-	azimElevFilename = f"RNX_SUCCESS/concat/azimuth&elevation_{epochRange}.txt"
+	masterOutputFile = open("masterOutputPath.txt", "r", encoding="utf-8")
+	masterOutputPath = masterOutputFile.readline()
+	masterOutputFile.close()
+	azimElevFilename = f"{masterOutputPath}/RNX_SUCCESS/concat/azimuth&elevation_{epochRange}.txt"
 	azimElevFile = open(azimElevFilename, "r", encoding="utf-8")
 	azimElevData = azimElevFile.readlines()
 	azimElevFile.close()

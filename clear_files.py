@@ -1,7 +1,7 @@
 import os
 
 def delFilesInDir(folder_path):
-    for filename in os.listdir(folder_path):
+    for filename in os.listdir(f"{folder_path}"):
         if filename == '.gitkeep':
             continue
 
@@ -18,8 +18,9 @@ def delFilesInDir(folder_path):
             print(f"Failed to delete {file_path}. Reason: {e}")
 
 
-folder_paths = ["IMAGE_SUCCESS", "GIF_SUCCESS", "RNX_SUCCESS"]
+"""if __name__ == "__main__":
+    folder_paths = ["IMAGE_SUCCESS", "GIF_SUCCESS", "RNX_SUCCESS", "NAV_SUCCESS"]
 
-for folder_path in folder_paths:
-    delFilesInDir(folder_path)
+    for folder_path in folder_paths:
+        delFilesInDir(folder_path)"""
     

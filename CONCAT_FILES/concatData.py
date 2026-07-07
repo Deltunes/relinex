@@ -3,9 +3,9 @@ import subprocess
 from datetime import datetime
 import numpy as np
 
-def concatFilelist(rnxFileDir: str, azielevFileDir: str):
+def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
 
-    outputFilepath = "RNX_SUCCESS/concat"
+    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat"
 
     rnxFileDict, azielevFileDict = getFilelist(rnxFileDir, azielevFileDir)
 

@@ -537,7 +537,7 @@ def read_obsFile_v3(obsFileName,header):
                 print("The last line has an unexpected format and will be ignored")
                 break # stop reading file
             else:
-                print(f"\033[93mUnexpected format detected! | Tentatively skipping line #{currentline}")
+                print(f"Unexpected format detected! | Tentatively skipping line #{currentline}")
                 currentline += 1
                 continue # skip remainder of loop
         # =========================================================================
