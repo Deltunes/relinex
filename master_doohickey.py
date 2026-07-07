@@ -36,6 +36,36 @@ masterOutputPath = masterOutputFile.readline()
 masterOutputFile.close()
 makeOutputDirs(masterOutputPath)
 
+def collectRINEXdata(waitTime=60, epochInterval=10):
+    # Variables
+    i = 1
+    quit = False
+    conv = mkconv()
+    aws_fileset = set()
+
+    try:
+        while not quit:
+            _, _, quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath)
+            i += 1
+
+            subprocess.run(["vcgencmd","get_throttled"])
+            subprocess.run(["vcgencmd","measure_temp"])
+            subprocess.run(["free","-h"])
+
+            # If program is quit during UBXtoRNX, end while loop
+            if quit:
+                print("Quitting...")
+                break
+
+            print("Uploading RINEX and plots to AWS storage")
+            try:
+                aws_fileset = aws_upload(aws_fileset, masterOutputPath)
+            except:
+                print("Upload failed!")
+            
+    except KeyboardInterrupt:
+        print("Keyboard Interrupt! Quitting...")
+
 while True:
     opt1 = -1
     opt2 = -1
@@ -57,8 +87,32 @@ while True:
         continue
     match opt1:
         case 1:
+            wait = "invalid"
+            epochInt = "invalid"
             print()
-            print("This section is incomplete! sorry :(")
+            while wait == "invalid":
+                print("Time between files?")
+                print("\t- ", end="")
+                wait = input()
+                try:
+                    wait = int(wait)
+                except:
+                    print("Invalid input. Try again.")
+                    wait = "invalid"
+                    continue
+
+            while epochInt == "invalid":
+                print("Epoch lengths?")
+                print("\t- ", end="")
+                epochInt = input()
+                try:
+                    epochInt = int(epochInt)
+                except:
+                    print("Invalid input. Try again.")
+                    epochInt = "invalid"
+                    continue
+            
+            collectRINEXdata(wait, epochInt)
         case 2:
             while opt2 != 0:
                 print("Which action?")
@@ -194,52 +248,4 @@ while True:
             sys.exit()
         case _:
             print("Invalid Input. Try again.")
-
-
-# Variables
-i = 1
-quit = False
-conv = mkconv()
-aws_fileset = set()
-
-# Make any missing directories
-os.makedirs("RNX_SUCCESS/rinex", exist_ok=True)
-os.makedirs("RNX_SUCCESS/azielev", exist_ok=True)
-
-# Take command line args as input for waitTime and epochInterval
-if len(sys.argv) > 2:
-    waitTime = int(sys.argv[1])
-    epochInterval = int(sys.argv[2])
-elif len(sys.argv) > 1:
-    waitTime = int(sys.argv[1])
-else:
-    waitTime = 60
-    epochInterval = 10
-
-try:
-    while not quit:
-        # Process GNSS data and convert to RINEX format + extra Azimuth/Elevation data
-        rnxFilepath = ""
-        azielevFilepath = ""
-
-        rnxFilepath, azielevFilepath, quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval)
-        i += 1
-
-        subprocess.run(["vcgencmd","get_throttled"])
-        subprocess.run(["vcgencmd","measure_temp"])
-        subprocess.run(["free","-h"])
-
-        # If program is quit during UBXtoRNX, end while loop
-        if quit:
-            print("Quitting...")
-            break
-
-        print("Uploading RINEX and plots to AWS storage")
-        try:
-            aws_fileset = aws_upload(aws_fileset)
-        except:
-            print("Upload failed!")
-        
-except KeyboardInterrupt:
-    print("Keyboard Interrupt! Quitting...")
 
