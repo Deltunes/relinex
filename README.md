@@ -8,7 +8,9 @@ Once cloned, run "python3 master_doohickey.py" from the main "leaflink" director
 You will be prompted to set the COMPORT that the Sparkfun chip is connected to. It will be empty by default. The COMPORT will be consistent between executions.
 
 Observation   - Generates a RINEX 3.05 format (.rnx) observation file.
+
 Navigation    - Generates a RINEX 3.05 format (.rnx) navigation file.
+
 OBS and NAV   - Generates both.
 
 ## AWS Download/Upload
