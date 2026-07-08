@@ -34,14 +34,18 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/gifs", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/palettes", exist_ok=True)
 
-masterOutputFile = open("masterOutputPath.txt", "r", encoding="utf-8")
+masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "r", encoding="utf-8")
 masterOutputPath = masterOutputFile.readline()
 masterOutputFile.close()
 makeOutputDirs(masterOutputPath)
 
-comportFile = open("comport.txt", "r", encoding="utf-8")
+comportFile = open("PERSISTENT_VAR/comport.txt", "r", encoding="utf-8")
 comport = comportFile.readline()
 comportFile.close()
+
+bucketFile = open("PERSISTENT_VAR/bucketName.txt", "r", encoding="utf-8")
+bucketName = bucketFile.readline()
+bucketFile.close()
 
 def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
     i = 1
@@ -74,9 +78,9 @@ def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
 
             print("Uploading RINEX and plots to AWS storage")
             try:
-                aws_fileset = aws_upload(aws_fileset, masterOutputPath)
+                aws_fileset = aws_upload(bucketName, aws_fileset, masterOutputPath)
             except:
-                print("Upload failed!")
+                print("Upload failed! Check connection.")
             
     except KeyboardInterrupt:
         print("Keyboard Interrupt! Quitting...")
@@ -110,7 +114,7 @@ while True:
             epochInt = "invalid"
             while True:
                 print(f"Current COMPORT: {comport}")
-                print("Set COMPORT? y/n")
+                print("Set new COMPORT? y/n")
                 print("\t- ", end="")
                 change = input()
                 if change not in validYes:
@@ -126,7 +130,7 @@ while True:
                 print("\t- ", end="")
                 comport = input()
 
-                comportFile = open("comport.txt", "w", encoding="utf-8")
+                comportFile = open("PERSISTENT_VAR/comport.txt", "w", encoding="utf-8")
                 comportFile.write(comport)
                 comportFile.close()
 
@@ -155,7 +159,7 @@ while True:
                 print()
 
             while wait == "invalid":
-                print("Time between files?")
+                print("Time between files? (in seconds)")
                 print("\t- ", end="")
                 wait = input()
                 try:
@@ -168,7 +172,7 @@ while True:
                 print()
 
             while epochInt == "invalid":
-                print("Epoch lengths?")
+                print("Time between written observations? (in seconds)")
                 print("\t- ", end="")
                 epochInt = input()
                 try:
@@ -181,7 +185,28 @@ while True:
                 print()
             
             collectRINEXdata(wait, epochInt, mode, comport)
+            print()
         case 2:
+            while True:
+                print(f"Current AWS bucket: {bucketName}")
+                print("Set new bucket name? y/n")
+                print("\t- ", end="")
+                change = input()
+                if change not in validYes:
+                    break
+                print()
+
+                print("Input new bucket name.")
+                print("\t- ", end="")
+                bucketName = input()
+
+                bucketFile = open("PERSISTENT_VAR/bucketName.txt", "w", encoding="utf-8")
+                bucketFile.write(bucketName)
+                bucketFile.close()
+
+                break
+            print()
+                
             while opt2 != 0:
                 print("Which action?")
                 print("\t1) Download")
@@ -200,13 +225,14 @@ while True:
                 match opt2:
                     case 1:
                         try:
-                            aws_download(outputPath=masterOutputPath)
+                            aws_download(bucketName, outputPath=masterOutputPath)
                             print()
                         except:
                             print("Download failed! Check connection.")
+                            print()
                     case 2:
                         try:
-                            aws_upload(outputPath=masterOutputPath)
+                            aws_upload(bucketName, outputPath=masterOutputPath)
                             print()
                         except:
                             print("Upload failed! Check connection.")
@@ -259,6 +285,7 @@ while True:
                         for path in delPaths:
                             dirs.append(path)
                     case 0:
+                        print()
                         break
                     case _:
                         print("Invalid input. Try again.")
@@ -312,7 +339,7 @@ while True:
                     print("Output directory set!")
                     masterOutputPath = newDir
 
-                    masterOutputFile = open("masterOutputPath.txt", "w", encoding="utf-8")
+                    masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "w", encoding="utf-8")
                     masterOutputFile.write(masterOutputPath)
                     masterOutputFile.close()
                     
