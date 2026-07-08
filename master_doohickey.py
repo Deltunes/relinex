@@ -7,12 +7,14 @@ sys.path.insert(2, 'GNSSVOD')
 sys.path.insert(3, 'AWS_DOWNLOAD')
 sys.path.insert(4, 'AWS_UPLOAD')
 sys.path.insert(5, 'GIF_CONVERT')
+sys.path.insert(6, 'CONCAT_FILES')
 from UBXtoRNXconv import UBXtoRNX
 from UBXtoNAVconv import UBXtoNAV
 from UBXtoNAVOBS import UBXtoNAVOBS
 from aws_download import aws_download
 from aws_upload import aws_upload
 from gif_maker import makeGIF
+from concatData import concatFilelist
 from clear_files import delFilesInDir
 
 validYes = ["y", "Y", "yes", "YES", "Yes"]
@@ -23,6 +25,9 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/rinex", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/azielev", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif/rinex", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif/azielev", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/NAV_SUCCESS", exist_ok=True)
 
@@ -33,19 +38,6 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/gifs", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/palettes", exist_ok=True)
-
-masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "r", encoding="utf-8")
-masterOutputPath = masterOutputFile.readline()
-masterOutputFile.close()
-makeOutputDirs(masterOutputPath)
-
-comportFile = open("PERSISTENT_VAR/comport.txt", "r", encoding="utf-8")
-comport = comportFile.readline()
-comportFile.close()
-
-bucketFile = open("PERSISTENT_VAR/bucketName.txt", "r", encoding="utf-8")
-bucketName = bucketFile.readline()
-bucketFile.close()
 
 def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
     i = 1
@@ -85,6 +77,19 @@ def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
     except KeyboardInterrupt:
         print("Keyboard Interrupt! Quitting...")
 
+masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "r", encoding="utf-8")
+masterOutputPath = masterOutputFile.readline()
+masterOutputFile.close()
+makeOutputDirs(masterOutputPath)
+
+comportFile = open("PERSISTENT_VAR/comport.txt", "r", encoding="utf-8")
+comport = comportFile.readline()
+comportFile.close()
+
+bucketFile = open("PERSISTENT_VAR/bucketName.txt", "r", encoding="utf-8")
+bucketName = bucketFile.readline()
+bucketFile.close()
+
 print()
 while True:
     opt1 = -1
@@ -95,6 +100,7 @@ while True:
     print("\t3) Create GIF from RINEX files")
     print("\t4) Clear Files")
     print('\t5) Set output path ("." by default)')
+    print("\t6) Combine RINEX files")
     print("\t0) Quit")
     print()
     print("\t\t- ", end="")
@@ -345,6 +351,8 @@ while True:
                     
                     makeOutputDirs(masterOutputPath)
                     break
+        case 6:
+            concatFilelist(f"{masterOutputPath}/RNX_SUCCESS/rinex", f"{masterOutputPath}/RNX_SUCCESS/azielev", masterOutputPath)
         case 0:
             print()
             sys.exit()

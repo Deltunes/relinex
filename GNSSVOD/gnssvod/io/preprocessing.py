@@ -385,6 +385,7 @@ def add_azi_ele(filename: str,
     
     epochRange = ""
     epochNums = False
+    filepath = "/".join(filename.split("/")[:-2])
     filenameFile = filename.split("/")[-1]
     for char in filenameFile:
         if char == ".":
@@ -394,7 +395,7 @@ def add_azi_ele(filename: str,
         elif char == "_" and epochNums == False:
             epochNums = True
 
-    azimelevdf = azim_elev_fromFile(epochRange)
+    azimelevdf = azim_elev_fromFile(epochRange, filepath)
 
     # add the gnss parameters to the observation dataframe
     obs.observation = obs.observation.join(azimelevdf)
@@ -417,7 +418,6 @@ def get_filelist(filepatterns: dict) -> dict:
     ----------
     filepatterns : dict
         Dictionary mapping station names to file search patterns.
-        Each pattern should be a valid glob expression (e.g., '\*.O').
 
     Returns
     -------

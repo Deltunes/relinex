@@ -56,7 +56,7 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
     epochLast = epochLast.strftime("%Y_%m_%d_%H_%M_%S")
 
     cmdstr.append("-fout")
-    cmdstr.append(f"RNX_SUCCESS/concat/success_{epochFirst}-{epochLast}.rnx")
+    cmdstr.append(f"{outputFilepath}/success_{epochFirst}-{epochLast}.rnx")
     print(f"first - {epochFirst}")
     print(f"last - {epochLast}")
     subprocess.run(cmdstr)
@@ -110,5 +110,3 @@ def RNXformatEdit(rnxFilepath):
 		else:
 			rplcRNX.write(line)
 	rplcRNX.close()
-
-concatFilelist("RNX_SUCCESS/rinex", "RNX_SUCCESS/azielev")

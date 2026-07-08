@@ -8,7 +8,7 @@ sys.path.insert(1, 'GNSSVOD')
 from gnssvod_oneSite import RNXtoIMG
 
 def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
-    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat"
+    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat/gif"
 
     rnxFileDict, azielevFileDict = getFilelist(rnxFileDir, azielevFileDir)
 
@@ -28,7 +28,8 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
     epochFirst = datetime.max
     epochLast = datetime.min
 
-
+    delRNX = None
+    delAzielev = None
     for i in range(len(rnxFilelist)):
         rnxFileNew = rnxFilelist[i]
         rnxFilename = rnxFileNew.split("/")[-1].split(".")[0]
@@ -55,13 +56,15 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
 
         epochFirstStr = epochFirst.strftime("%Y_%m_%d_%H_%M_%S")
         epochLastStr = epochLast.strftime("%Y_%m_%d_%H_%M_%S")
-        outputFilepathRNX = f"{outputFilepath}/success_{epochFirstStr}-{epochLastStr}.rnx"
+        newRNXFilename = f"success_{epochFirstStr}-{epochLastStr}.rnx"
+        outputFilepathRNX = f"{outputFilepath}/rinex/{newRNXFilename}"
 
         cmdstr = []
         cmdstr.append(f"CONCAT_FILES/gfzrnx")
         cmdstr.append("-finp")
         if prevRNXOutput:
              cmdstr.append(prevRNXOutput)
+             delRNX = prevRNXOutput
         cmdstr.append(rnxFileNew)
         cmdstr.append("-fout")
         cmdstr.append(outputFilepathRNX)
@@ -73,7 +76,8 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
         prevRNXOutput = outputFilepathRNX
 
         # AZIMUTH & ELEVATION CONCAT
-        outputFilepathAzielev = f"{outputFilepath}/azimuth&elevation_{epochFirstStr}-{epochLastStr}.txt"
+        newAzielevFilename = f"azimuth&elevation_{epochFirstStr}-{epochLastStr}.txt"
+        outputFilepathAzielev = f"{outputFilepath}/azielev/{newAzielevFilename}"
         azielevOutput = open(outputFilepathAzielev, "w", encoding="utf-8")
 
         if prevAzielevOutput:
@@ -81,6 +85,7 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
             for line in prev:
                 azielevOutput.write(line)
             prev.close()
+            delAzielev = prevAzielevOutput
 
         new = open(azielevFilelist[i], "r", encoding="utf-8")
         for line in new:
@@ -91,6 +96,12 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
         prevAzielevOutput = outputFilepathAzielev
 
         RNXtoIMG(outputFilepathRNX, outputPath)
+        if delRNX != None and delAzielev != None:
+            delNC = f"GNSSVOD/nc/{f"{newRNXFilename.split(".")[0]}.nc"}"
+            os.remove(delRNX)
+            os.remove(delAzielev)
+            os.remove(delNC)
+            
         print()
 
 def getFilelist(rnxfiledir: str, azielevfiledir: str):
