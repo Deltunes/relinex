@@ -1,12 +1,15 @@
 import sys
 import os
 import subprocess
+import serial.tools.list_ports
 sys.path.insert(1, 'UBXtoRNX')
 sys.path.insert(2, 'GNSSVOD')
 sys.path.insert(3, 'AWS_DOWNLOAD')
 sys.path.insert(4, 'AWS_UPLOAD')
 sys.path.insert(5, 'GIF_CONVERT')
-from UBXtoRNXconv import UBXtoRNX, mkconv
+from UBXtoRNXconv import UBXtoRNX
+from UBXtoNAVconv import UBXtoNAV
+from UBXtoNAVOBS import UBXtoNAVOBS
 from aws_download import aws_download
 from aws_upload import aws_upload
 from gif_maker import makeGIF
@@ -36,23 +39,35 @@ masterOutputPath = masterOutputFile.readline()
 masterOutputFile.close()
 makeOutputDirs(masterOutputPath)
 
-def collectRINEXdata(waitTime=60, epochInterval=10):
-    # Variables
+comportFile = open("comport.txt", "r", encoding="utf-8")
+comport = comportFile.readline()
+comportFile.close()
+
+def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
     i = 1
     quit = False
-    conv = mkconv()
     aws_fileset = set()
 
     try:
         while not quit:
-            _, _, quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath)
+            match mode:
+                case 1:
+                    quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                case 2:
+                    quit = UBXtoNAV(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                case 3:
+                    quit = UBXtoNAVOBS(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                case _:
+                    quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
             i += 1
 
-            subprocess.run(["vcgencmd","get_throttled"])
-            subprocess.run(["vcgencmd","measure_temp"])
-            subprocess.run(["free","-h"])
+            try:
+                subprocess.run(["vcgencmd","get_throttled"])
+                subprocess.run(["vcgencmd","measure_temp"])
+                subprocess.run(["free","-h"])
+            except:
+                print("Could not retrieve Raspberry Pi hardware info.")
 
-            # If program is quit during UBXtoRNX, end while loop
             if quit:
                 print("Quitting...")
                 break
@@ -66,10 +81,10 @@ def collectRINEXdata(waitTime=60, epochInterval=10):
     except KeyboardInterrupt:
         print("Keyboard Interrupt! Quitting...")
 
+print()
 while True:
     opt1 = -1
     opt2 = -1
-    print()
     print("What would you like to do?")
     print("\t1) Collect RINEX Data")
     print("\t2) AWS Download/Upload")
@@ -84,12 +99,61 @@ while True:
         opt1 = int(opt1)
     except:
         print("Invalid input. Try again.")
+        print()
         continue
+    print()
+
     match opt1:
         case 1:
+            mode = "invalid"
             wait = "invalid"
             epochInt = "invalid"
+            while True:
+                print(f"Current COMPORT: {comport}")
+                print("Set COMPORT? y/n")
+                print("\t- ", end="")
+                change = input()
+                if change not in validYes:
+                    break
+                print()
+
+                ports = serial.tools.list_ports.comports()
+                for port in ports:
+                    print(f"{port.device} - {port.description}")
+                print()
+
+                print("Input new COMPORT.")
+                print("\t- ", end="")
+                comport = input()
+
+                comportFile = open("comport.txt", "w", encoding="utf-8")
+                comportFile.write(comport)
+                comportFile.close()
+
+                break
             print()
+                
+            while mode == "invalid":
+                print("Collection mode?")
+                print("\t1) Observation file")
+                print("\t2) Navigation file")
+                print("\t3) OBS and NAV file")
+                print("\t\t- ", end="")
+                mode = input()
+                try:
+                    mode = int(mode)
+                except:
+                    print("Invalid input. Try again.")
+                    print()
+                    mode = "invalid"
+                    continue
+                if mode not in [1,2,3]:
+                    print("Invalid input. Try again.")
+                    print()
+                    mode = "invalid"
+                    continue
+                print()
+
             while wait == "invalid":
                 print("Time between files?")
                 print("\t- ", end="")
@@ -98,8 +162,10 @@ while True:
                     wait = int(wait)
                 except:
                     print("Invalid input. Try again.")
+                    print()
                     wait = "invalid"
                     continue
+                print()
 
             while epochInt == "invalid":
                 print("Epoch lengths?")
@@ -109,49 +175,56 @@ while True:
                     epochInt = int(epochInt)
                 except:
                     print("Invalid input. Try again.")
+                    print()
                     epochInt = "invalid"
                     continue
+                print()
             
-            collectRINEXdata(wait, epochInt)
+            collectRINEXdata(wait, epochInt, mode, comport)
         case 2:
             while opt2 != 0:
                 print("Which action?")
                 print("\t1) Download")
                 print("\t2) Upload")
                 print("\t0) Back")
-                print()
                 print("\t\t- ", end="")
                 opt2 = input()
                 try:
                     opt2 = int(opt2)
                 except:
-                    print("Invalid Input. Try again.")
+                    print("Invalid input. Try again.")
+                    print()
                     continue
+                print()
+
                 match opt2:
                     case 1:
                         try:
-                            aws_download(masterOutputPath)
+                            aws_download(outputPath=masterOutputPath)
                             print()
                         except:
                             print("Download failed! Check connection.")
                     case 2:
                         try:
-                            aws_upload(masterOutputPath)
+                            aws_upload(outputPath=masterOutputPath)
                             print()
                         except:
-                            print("Download failed! Check connection.")
+                            print("Upload failed! Check connection.")
                     case 0:
                         break
                     case _:
-                        print("Invalid Input. Try again.")
+                        print("Invalid input. Try again.")
+                        print()
                         continue
         case 3:
-            print()
             print("GIF conversion may take a while and use a good amount of RAM. Are you sure? y/n")
             print("\t- ", end="")
             contYes = input()
             if contYes in validYes:
                 makeGIF(masterOutputPath)
+            else:
+                print()
+                continue
         case 4:
             while opt2 != 0:
                 show = False
@@ -162,13 +235,13 @@ while True:
                 print("\t4) GIF_SUCCESS")
                 print("\t5) All of the above")
                 print("\t0) Back")
-                print()
                 print("\t\t- ", end="")
                 opt2 = input()
                 try:
                     opt2 = int(opt2)
                 except:
-                    print("Invalid Input. Try again.")
+                    print("Invalid input. Try again.")
+                    print()
                     continue
 
                 dirs = []
@@ -188,47 +261,49 @@ while True:
                     case 0:
                         break
                     case _:
-                        print("Invalid Input. Try again.")
+                        print("Invalid input. Try again.")
+                        print()
                         continue
-                
                 print()
+
                 print("Show directory contents? y/n")
                 print("\t- ", end="")
                 showContents = input()
                 if showContents in validYes:
                     show = True
+                print()
 
-                print("-=-=-=-")
                 for dir in dirs:
                     if show:
                         for (root,dirs,files) in (os.walk(f"{masterOutputPath}/{dir}",topdown=True)):
                             for file in files:
                                 print(f"{root}/{file}")
+                        print()
 
-                    print()
                     print("Delete Files? y/n")
                     print("\t\t- ", end="")
                     delForReal = input()
+                    print()
+
                     if delForReal in validYes:
                         delFilesInDir(f"{masterOutputPath}/{dir}")
+                        print()
                     else:
-                        print("Aborting File Deletion...")
+                        print("Aborting file deletion.")
+                        print()
                         continue         
         case 5:
             while True:
-                print()
                 print(f"Current output path: {masterOutputPath}")
                 print("Change directory? y/n")
-                print()
-                print("\t\t- ", end="")
+                print("\t- ", end="")
                 change = input()
+                print()
                 if change not in validYes:
                     break
 
-                print()
                 print("Input new output directory.")
-                print()
-                print("\t\t- ", end="")
+                print("\t- ", end="")
                 newDir = input()
                 if os.path.isdir(newDir) == False:
                     print("Invalid directory! Does not exist.")

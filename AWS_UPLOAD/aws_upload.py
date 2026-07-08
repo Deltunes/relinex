@@ -32,7 +32,6 @@ def aws_upload(fileset=set(), outputPath="."):
     for dir in upload_dirs:
         for (root,dirs,files) in (os.walk(f"{outputPath}/{dir}",topdown=True)):
             for file in files:
-                print(file)
                 bucket_path = f"./{("/".join(root.split("/")[4:]))}/{file}"
                 if bucket_path not in fileset:
                     print(bucket_path)

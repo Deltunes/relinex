@@ -162,10 +162,16 @@ def renameFilesWithEpoch(rnxFilepath, azielevFilepath):
 	azielevFilepathNew = "/".join(azielevFileSplit)
 	subprocess.run(["mv", f"{azielevFilepath}", f"{azielevFilepathNew}"])
 
-def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath="."):
+def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
+	COMPORT = comport
 	# Connect to Sparkfun chip through COMPORT
-	stream = Serial(COMPORT, 9600, timeout=10)
-	ubr = UBXReader(stream)
+	try:
+		stream = Serial(COMPORT, 9600, timeout=10)
+		ubr = UBXReader(stream)
+	except:
+		print(f"Could not connect to Sparkfun chip at COMPORT: {COMPORT}")
+		quit = True
+		return quit
 		
 	print(f"RINEX FILE LENGTH: {waitTime} second(s)")
 	print(f"EPOCH INTERVAL: {epochInterval} second(s)")
@@ -258,7 +264,7 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath="."):
 
 		print()
 		quit = False
-		return rnxFilepath, azielevFilepath, quit
+		return quit
 
 	# IF PROGRAM IS EXITED BEFORE COMPLETION
 	except KeyboardInterrupt:
@@ -277,15 +283,16 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath="."):
 
 		print()
 		quit = True
-		return rnxFilepath, azielevFilepath, quit
+		return quit
 
+# Run UBXtoRNX, pass arguments
 if __name__ == "__main__":
-	# Run UBXtoRNX, pass arguments
-	if len(sys.argv) > 3:
-		UBXtoRNX(int(sys.argv[1]),int(sys.argv[2]),int(sys.argv[3]))
-	elif len(sys.argv) > 2:
-		UBXtoRNX(int(sys.argv[1]),int(sys.argv[2]))
-	elif len(sys.argv) > 1:
-		UBXtoRNX(int(sys.argv[1]))
-	else:
-		UBXtoRNX()
+	i = 1
+	while True:
+		if len(sys.argv) > 2:
+			UBXtoRNX(i, int(sys.argv[1]),int(sys.argv[2]))
+		elif len(sys.argv) > 1:
+			UBXtoRNX(i, int(sys.argv[1]))
+		else:
+			UBXtoRNX(i)
+		i += 1

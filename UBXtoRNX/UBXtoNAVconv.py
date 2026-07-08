@@ -35,10 +35,16 @@ def mkconv():
         comments=[],
     )
 
-def UBXtoNAV(fileno, waitTime=600, epochInterval=30):
+def UBXtoNAV(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
+    COMPORT = comport
     # Connect to Sparkfun chip through COMPORT
-    stream = Serial(COMPORT, 9600, timeout=10)
-    ubr = UBXReader(stream)
+    try:
+        stream = Serial(COMPORT, 9600, timeout=10)
+        ubr = UBXReader(stream)
+    except:
+        print(f"Could not connect to Sparkfun chip at COMPORT: {COMPORT}")
+        quit = True
+        return quit
         
     print(f"NAVIGATION FILE LENGTH: {waitTime} second(s)")
     print(f"EPOCH INTERVAL: {epochInterval} second(s)")
@@ -95,7 +101,7 @@ def UBXtoNAV(fileno, waitTime=600, epochInterval=30):
         conv.process_output_data(["N"])
         conv._outputs[NAV]["stm"].close()
 
-        return rnxFilepath
+        return quit
 
     # IF PROGRAM IS EXITED BEFORE COMPLETION
     except KeyboardInterrupt:
@@ -104,9 +110,15 @@ def UBXtoNAV(fileno, waitTime=600, epochInterval=30):
             conv.process_output_data(["N"])
             conv._outputs[NAV]["stm"].close()
 
-        return rnxFilepath
+        return quit
 
-i = 1
-while True:
-    UBXtoNAV(i)
-    i += 1
+if __name__ == "__main__":
+    i = 1
+    while True:
+        if len(sys.argv) > 2:
+            UBXtoNAV(i, int(sys.argv[1]),int(sys.argv[2]))
+        elif len(sys.argv) > 1:
+            UBXtoNAV(i, int(sys.argv[1]))
+        else:
+            UBXtoNAV(i)
+        i += 1
