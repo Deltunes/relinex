@@ -7,15 +7,7 @@ import subprocess
 import sys
 import os
 
-# 	Lists serial ports to determine COMPORT
-# 	Uncomment if needed
-#import serial.tools.list_ports
-#ports = serial.tools.list_ports.comports()
-#for port in ports:
-#    print(f"{port.device} - {port.description}")
-
-COMPORT = '/dev/ttyACM0'
-#COMPORT = 'COM3'
+COMPORT = None
 
 def mkconv():
 	return RinexConverter(

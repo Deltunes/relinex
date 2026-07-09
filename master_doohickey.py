@@ -4,15 +4,13 @@ import subprocess
 import serial.tools.list_ports
 sys.path.insert(1, 'UBXtoRNX')
 sys.path.insert(2, 'GNSSVOD')
-sys.path.insert(3, 'AWS_DOWNLOAD')
-sys.path.insert(4, 'AWS_UPLOAD')
-sys.path.insert(5, 'GIF_CONVERT')
-sys.path.insert(6, 'CONCAT_FILES')
-from UBXtoRNXconv import UBXtoRNX
-from UBXtoNAVconv import UBXtoNAV
+sys.path.insert(3, 'AWS_UPDOWN')
+sys.path.insert(4, 'GIF_CONVERT')
+sys.path.insert(5, 'CONCAT_FILES')
+from UBXtoRNX import UBXtoRNX
+from UBXtoNAV import UBXtoNAV
 from UBXtoNAVOBS import UBXtoNAVOBS
-from aws_download import aws_download
-from aws_upload import aws_upload
+from aws_updown import aws_download, aws_upload
 from gif_maker import makeGIF
 from concatData import concatFilelist
 from clear_files import delFilesInDir
@@ -25,15 +23,20 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/rinex", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/azielev", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif/rinex", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif/azielev", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/rinex", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/azielev", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data/rinex", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data/azielev", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/NAV_SUCCESS", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/hemi", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/scatter", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/gif_imgs", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/gif_imgs/hemi", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/gif_imgs/scatter", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/gifs", exist_ok=True)
@@ -306,15 +309,15 @@ while True:
                     show = True
                 print()
 
-                for dir in dirs:
-                    if show:
+                if show:
+                    for dir in dirs:
                         for (root,dirs,files) in (os.walk(f"{masterOutputPath}/{dir}",topdown=True)):
                             for file in files:
                                 print(f"{root}/{file}")
                         print()
 
                     print("Delete Files? y/n")
-                    print("\t\t- ", end="")
+                    print("\t- ", end="")
                     delForReal = input()
                     print()
 

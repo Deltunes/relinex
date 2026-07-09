@@ -6,14 +6,7 @@ from pygnssutils.rinex_globals import OBS, EPOCHMIN
 import subprocess
 import sys
 
-# 	Lists serial ports to determine COMPORT
-# 	Uncomment if needed
-#import serial.tools.list_ports
-#ports = serial.tools.list_ports.comports()
-#for port in ports:
-#    print(f"{port.device} - {port.description}")
-
-COMPORT = '/dev/ttyACM0'
+COMPORT = None
 
 def mkconv():
 	return RinexConverter(
@@ -158,7 +151,7 @@ def renameFilesWithEpoch(rnxFilepath, azielevFilepath):
 	subprocess.run(["mv", f"{rnxFilepath}", f"{rnxFilepathNew}"])
 
 	azielevFileSplit = azielevFilepath.split("/")
-	azielevFileSplit[-1] = f"azimuth&elevation_{firstEpoch}-{lastEpoch}.txt"
+	azielevFileSplit[-1] = f"azielev_{firstEpoch}-{lastEpoch}.txt"
 	azielevFilepathNew = "/".join(azielevFileSplit)
 	subprocess.run(["mv", f"{azielevFilepath}", f"{azielevFilepathNew}"])
 
@@ -186,7 +179,7 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None
 
 		# Set RINEX and AZIELEV filenames
 		rnxFilepath = f"{outputPath}/RNX_SUCCESS/rinex/success{fileno}.rnx"
-		azielevFilepath = f"{outputPath}/RNX_SUCCESS/azielev/azimuth&elevation{fileno}.txt"
+		azielevFilepath = f"{outputPath}/RNX_SUCCESS/azielev/azielev{fileno}.txt"
 		azielevFile = open(azielevFilepath, "w", encoding="utf-8")
 		azielevFile.write("")
 		azielevFile.close()

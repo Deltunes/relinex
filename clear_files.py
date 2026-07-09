@@ -14,13 +14,6 @@ def delFilesInDir(folder_path):
             if os.path.isfile(file_path) or os.path.islink(file_path):
                 print(f"Removing file: {file_path}")
                 os.remove(file_path)
-        except Exception as e:
-            print(f"Failed to delete {file_path}. Reason: {e}")
-
-
-"""if __name__ == "__main__":
-    folder_paths = ["IMAGE_SUCCESS", "GIF_SUCCESS", "RNX_SUCCESS", "NAV_SUCCESS"]
-
-    for folder_path in folder_paths:
-        delFilesInDir(folder_path)"""
+        except:
+            print(f"Failed to delete {file_path}")
     

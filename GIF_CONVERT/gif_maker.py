@@ -23,14 +23,14 @@ def getFilelist(imgfiledir: str):
 def makeGIF(outputPath="."):
     # Scale scatter plots for GIF conversion
     concatFilelist(f"{outputPath}/RNX_SUCCESS/rinex", f"{outputPath}/RNX_SUCCESS/azielev", outputPath)
-    fileset = getFilelist(f"{outputPath}/IMAGE_SUCCESS/scatter/")
+    scatterFilepath = f"{outputPath}/IMAGE_SUCCESS/gif_imgs/scatter"
+    fileset = getFilelist(scatterFilepath)
 
     print("Scaling scatter plot images")
     for filename in fileset:
-        #print(filename)
-        scaleCMD = f"ffmpeg -hide_banner -loglevel error -i {outputPath}/IMAGE_SUCCESS/scatter/{filename}.png -vf scale=600:600 {outputPath}/IMAGE_SUCCESS/scatter/{filename}S.png -y"
-        delCMD = f"rm {outputPath}/IMAGE_SUCCESS/scatter/{filename}.png"
-        renameCMD = f"mv {outputPath}/IMAGE_SUCCESS/scatter/{filename}S.png {outputPath}/IMAGE_SUCCESS/scatter/{filename}.png"
+        scaleCMD = f"ffmpeg -hide_banner -loglevel error -i {scatterFilepath}/{filename}.png -vf scale=600:600 {scatterFilepath}/{filename}S.png -y"
+        delCMD = f"rm {scatterFilepath}/{filename}.png"
+        renameCMD = f"mv {scatterFilepath}/{filename}S.png {scatterFilepath}/{filename}.png"
 
         scaleCMD = scaleCMD.split(" ")
         delCMD = delCMD.split(" ")
@@ -41,14 +41,15 @@ def makeGIF(outputPath="."):
         subprocess.run(renameCMD)
 
     # Scale hemi plots for GIF conversion
-    fileset = getFilelist(f"{outputPath}/IMAGE_SUCCESS/hemi/")
+    hemiFilepath = f"{outputPath}/IMAGE_SUCCESS/gif_imgs/hemi"
+    fileset = getFilelist(hemiFilepath)
 
     print("Scaling hemi plot images")
     for filename in fileset:
         print(filename)
-        scaleCMD = f"ffmpeg -hide_banner -loglevel error -i {outputPath}/IMAGE_SUCCESS/hemi/{filename}.png -vf scale=600:600 {outputPath}/IMAGE_SUCCESS/hemi/{filename}S.png -y"
-        delCMD = f"rm {outputPath}/IMAGE_SUCCESS/hemi/{filename}.png"
-        renameCMD = f"mv {outputPath}/IMAGE_SUCCESS/hemi/{filename}S.png {outputPath}/IMAGE_SUCCESS/hemi/{filename}.png"
+        scaleCMD = f"ffmpeg -hide_banner -loglevel error -i {hemiFilepath}/{filename}.png -vf scale=600:600 {hemiFilepath}/{filename}S.png -y"
+        delCMD = f"rm {hemiFilepath}/{filename}.png"
+        renameCMD = f"mv {hemiFilepath}/{filename}S.png {hemiFilepath}/{filename}.png"
 
         scaleCMD = scaleCMD.split(" ")
         delCMD = delCMD.split(" ")
@@ -58,10 +59,10 @@ def makeGIF(outputPath="."):
         subprocess.run(delCMD)
         subprocess.run(renameCMD)
 
-    scatterPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{outputPath}/IMAGE_SUCCESS/scatter/plot_oneSite_success_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_scatter.png -y'
-    hemiPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{outputPath}/IMAGE_SUCCESS/hemi/plot_oneSite_hemi_success_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_hemi.png -y'
-    scatterGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{outputPath}/IMAGE_SUCCESS/scatter/plot_oneSite_success_*.png" -i {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_scatter.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/gifs/plot_oneSite_scatter.gif -y'
-    hemiGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{outputPath}/IMAGE_SUCCESS/hemi/plot_oneSite_hemi_success_*.png" -i {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_hemi.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/gifs/plot_oneSite_hemi.gif -y'
+    scatterPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{scatterFilepath}/plot_oneSite_success_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_scatter.png -y'
+    hemiPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{hemiFilepath}/plot_oneSite_hemi_success_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_hemi.png -y'
+    scatterGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{scatterFilepath}/plot_oneSite_success_*.png" -i {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_scatter.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/gifs/plot_oneSite_scatter.gif -y'
+    hemiGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{hemiFilepath}/plot_oneSite_hemi_success_*.png" -i {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_hemi.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/gifs/plot_oneSite_hemi.gif -y'
 
     print("Creating scatter plot palette")
     subprocess.run(scatterPaletteCMD, shell=True)
@@ -73,7 +74,3 @@ def makeGIF(outputPath="."):
     subprocess.run(hemiGIFCMD, shell=True)
 
     print("Program complete! GIFs made.")
-
-if __name__ == "__main__":
-    #concatFilelist("RNX_SUCCESS/rinex", "RNX_SUCCESS/azielev")
-    makeGIF()

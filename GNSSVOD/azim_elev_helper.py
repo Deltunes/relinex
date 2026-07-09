@@ -1,7 +1,7 @@
 import pandas as pd
 
 def azim_elev_fromFile(epochRange, filepath):
-	azimElevFilename = f"{filepath}/azielev/azimuth&elevation_{epochRange}.txt"
+	azimElevFilename = f"{filepath}/azielev/azielev_{epochRange}.txt"
 	azimElevFile = open(azimElevFilename, "r", encoding="utf-8")
 	azimElevData = azimElevFile.readlines()
 	azimElevFile.close()

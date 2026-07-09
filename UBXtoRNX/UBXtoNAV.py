@@ -5,14 +5,7 @@ from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import NAV, EPOCHMIN
 import sys
 
-#   Lists serial ports to determine COMPORT
-#   Uncomment if needed
-#import serial.tools.list_ports
-#ports = serial.tools.list_ports.comports()
-#for port in ports:
-#    print(f"{port.device} - {port.description}")
-
-COMPORT = '/dev/ttyACM0'
+COMPORT = None
 
 def mkconv():
     return RinexConverter(

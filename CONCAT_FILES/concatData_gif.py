@@ -8,7 +8,7 @@ sys.path.insert(1, 'GNSSVOD')
 from gnssvod_oneSite import RNXtoIMG
 
 def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
-    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat/gif"
+    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat/gif_data"
 
     rnxFileDict, azielevFileDict = getFilelist(rnxFileDir, azielevFileDir)
 
@@ -76,7 +76,7 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
         prevRNXOutput = outputFilepathRNX
 
         # AZIMUTH & ELEVATION CONCAT
-        newAzielevFilename = f"azimuth&elevation_{epochFirstStr}-{epochLastStr}.txt"
+        newAzielevFilename = f"azielev_{epochFirstStr}-{epochLastStr}.txt"
         outputFilepathAzielev = f"{outputFilepath}/azielev/{newAzielevFilename}"
         azielevOutput = open(outputFilepathAzielev, "w", encoding="utf-8")
 
@@ -119,7 +119,7 @@ def getFilelist(rnxfiledir: str, azielevfiledir: str):
     for filename in os.listdir(azielevfiledir):
         filenameSplit = filename.split(".")
         extension = filenameSplit[-1]
-        if extension == "txt" and filenameSplit[0][0:17] == "azimuth&elevation":
+        if extension == "txt" and filenameSplit[0][0:17] == "azielev":
             firstDatetimeStr = filenameSplit[0][18:].split("-")[0]
             firstDatetime = datetime.strptime(firstDatetimeStr, "%Y_%m_%d_%H_%M_%S")
             azielevFileDict[firstDatetime] = f"{azielevfiledir}/{filename}"
