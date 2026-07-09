@@ -1,6 +1,6 @@
 import time
 from serial import Serial
-from pyubx2 import UBXReader
+from pyubx2 import UBXReader, UBXMessage, SET_LAYER_RAM, SET_LAYER_BBR
 from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import OBS, NAV, EPOCHMIN
 import subprocess
@@ -69,6 +69,13 @@ def UBXtoNAVOBS(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=N
     try:
         stream = Serial(COMPORT, 9600, timeout=10)
         ubr = UBXReader(stream)
+
+        cfg_data = [
+            ("CFG_MSGOUT_UBX_RXM_RAWX_USB", 1),
+            ("CFG_MSGOUT_UBX_RXM_SFRBX_USB", 1),
+        ]
+        msg = UBXMessage.config_set(SET_LAYER_RAM | SET_LAYER_BBR, 0, cfg_data)
+        stream.write(msg.serialize())
     except:
         print(f"Could not connect to Sparkfun chip at COMPORT: {COMPORT}")
         quit = True
@@ -88,8 +95,8 @@ def UBXtoNAVOBS(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=N
         lastEpoch = None
 
         # Set RINEX and AZIELEV filenames
-        rnxFilepathOBS = f"{outputPath}/NAV_SUCCESS/success_obs_{fileno}.rnx"
-        rnxFilepathNAV = f"{outputPath}/NAV_SUCCESS/success_nav_{fileno}.rnx"
+        rnxFilepathOBS = f"{outputPath}/NAV_SUCCESS/obs/success_obs_{fileno}.rnx"
+        rnxFilepathNAV = f"{outputPath}/NAV_SUCCESS/nav/success_nav_{fileno}.rnx"
 
         # Set up file stream for RINEX file output
         conv._outputs[OBS]["fnm"] = rnxFilepathOBS
@@ -110,9 +117,12 @@ def UBXtoNAVOBS(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=N
 
             # Read UBXMessage from Sparkfun chip
             _, msg = ubr.read()
+            
+            #print(msg.identity)
 
             # If no UBXMessage was received, just continue to next loop
             if msg == None:
+                print("no message received.")
                 continue
 
             # RXM-RAWX is received every second

@@ -1,6 +1,6 @@
 import time
 from serial import Serial
-from pyubx2 import UBXReader
+from pyubx2 import UBXReader, UBXMessage, SET_LAYER_RAM, SET_LAYER_BBR
 from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import OBS, EPOCHMIN
 import subprocess
@@ -161,6 +161,14 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None
 	try:
 		stream = Serial(COMPORT, 9600, timeout=10)
 		ubr = UBXReader(stream)
+
+		cfg_data = [
+        	("CFG_MSGOUT_UBX_RXM_RAWX_USB", 1),
+        	("CFG_MSGOUT_UBX_RXM_SFRBX_USB", 1),
+			("CFG_MSGOUT_UBX_NAV_SAT_USB", 1),
+    	]
+		msg = UBXMessage.config_set(SET_LAYER_RAM | SET_LAYER_BBR, 0, cfg_data)
+		stream.write(msg.serialize())
 	except:
 		print(f"Could not connect to Sparkfun chip at COMPORT: {COMPORT}")
 		quit = True
@@ -203,6 +211,8 @@ def UBXtoRNX(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None
 			# Read UBXMessage from Sparkfun chip
 			_, msg = ubr.read()
 			
+			print(msg.identity)
+
 			# If no UBXMessage was received, just continue to next loop
 			if msg == None:
 				continue

@@ -30,6 +30,8 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data/azielev", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/NAV_SUCCESS", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/obs", exist_ok=True)
+    os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/nav", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/hemi", exist_ok=True)

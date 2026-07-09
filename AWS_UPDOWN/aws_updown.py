@@ -32,6 +32,8 @@ def aws_upload(bucketName, fileset=set(), outputPath="."):
     for dir in upload_dirs:
         for (root,dirs,files) in (os.walk(f"{outputPath}/{dir}",topdown=True)):
             for file in files:
+                if file == ".gitkeep":
+                    continue
                 #print(root)
                 rootSplit = root.split("/")
                 for i in range(len(rootSplit)):
