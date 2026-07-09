@@ -1,1 +1,1 @@
-/mnt/c/Users/elija/Downloads/test
+/home/deltunes/Desktop/output
