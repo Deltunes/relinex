@@ -309,8 +309,8 @@ while True:
                     show = True
                 print()
 
-                if show:
-                    for dir in dirs:
+                for dir in dirs:
+                    if show:
                         for (root,dirs,files) in (os.walk(f"{masterOutputPath}/{dir}",topdown=True)):
                             for file in files:
                                 print(f"{root}/{file}")
