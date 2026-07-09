@@ -21,6 +21,9 @@ def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
     azielevFilelist = []
     for tuple in azielevFileTupleSorted:
          azielevFilelist.append(tuple[1])
+
+    print(len(rnxFilelist))
+    print(len(azielevFilelist))
          
     prevRNXOutput = None
     prevAzielevOutput = None
@@ -119,8 +122,8 @@ def getFilelist(rnxfiledir: str, azielevfiledir: str):
     for filename in os.listdir(azielevfiledir):
         filenameSplit = filename.split(".")
         extension = filenameSplit[-1]
-        if extension == "txt" and filenameSplit[0][0:17] == "azielev":
-            firstDatetimeStr = filenameSplit[0][18:].split("-")[0]
+        if extension == "txt" and filenameSplit[0][0:7] == "azielev":
+            firstDatetimeStr = filenameSplit[0][8:].split("-")[0]
             firstDatetime = datetime.strptime(firstDatetimeStr, "%Y_%m_%d_%H_%M_%S")
             azielevFileDict[firstDatetime] = f"{azielevfiledir}/{filename}"
             #print(f"{azielevfiledir}/{filename}")
