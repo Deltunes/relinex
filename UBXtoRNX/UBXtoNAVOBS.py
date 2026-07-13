@@ -48,7 +48,7 @@ def renameFilesWithEpoch(rnxFilepath, firstEpoch, lastEpoch):
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     rnxFileSplit = rnxFilepath.split("/")
-    rnxFileSplit[-1] = f"{rnxFileSplit[-1][:12]}{firstEpoch}-{lastEpoch}.rnx"
+    rnxFileSplit[-1] = f"{rnxFileSplit[-1][:18]}{firstEpoch}-{lastEpoch}.rnx"
     rnxFilepathNew = "/".join(rnxFileSplit)
     os.rename(f"{rnxFilepath}", f"{rnxFilepathNew}")
 
@@ -63,11 +63,11 @@ def getEpoch(conv, currEpoch):
     if currEpoch != newEpoch:
         return newEpoch
 
-def UBXtoNAVOBS(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
+def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
     COMPORT = comport
     # Connect to Sparkfun chip through COMPORT
     try:
-        stream = Serial(COMPORT, 9600, timeout=10)
+        stream = Serial(COMPORT,  115200, timeout=10)
         ubr = UBXReader(stream)
 
         cfg_data = [
@@ -95,8 +95,8 @@ def UBXtoNAVOBS(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=N
         lastEpoch = None
 
         # Set RINEX and AZIELEV filenames
-        rnxFilepathOBS = f"{outputPath}/NAV_SUCCESS/obs/success_obs_{fileno}.rnx"
-        rnxFilepathNAV = f"{outputPath}/NAV_SUCCESS/nav/success_nav_{fileno}.rnx"
+        rnxFilepathOBS = f"{outputPath}/OBSNAV_SUCCESS/site{siteno}/obs/success_obs_site{siteno}_{fileno}.rnx"
+        rnxFilepathNAV = f"{outputPath}/OBSNAV_SUCCESS/site{siteno}/nav/success_nav_site{siteno}_{fileno}.rnx"
 
         # Set up file stream for RINEX file output
         conv._outputs[OBS]["fnm"] = rnxFilepathOBS
@@ -177,8 +177,8 @@ def UBXtoNAVOBS(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=N
             RNXformatEdit(rnxFilepathNAV)
 
         # Write incomplete AZIELEV data
-        #renameFilesWithEpoch(rnxFilepathOBS, firstEpoch, lastEpoch)
-        #renameFilesWithEpoch(rnxFilepathNAV, firstEpoch, lastEpoch)
+        renameFilesWithEpoch(rnxFilepathOBS, firstEpoch, lastEpoch)
+        renameFilesWithEpoch(rnxFilepathNAV, firstEpoch, lastEpoch)
 
         print()
         quit = True

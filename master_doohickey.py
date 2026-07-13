@@ -12,7 +12,7 @@ from UBXtoNAV import UBXtoNAV
 from UBXtoNAVOBS import UBXtoNAVOBS
 from aws_updown import aws_download, aws_upload
 from gif_maker import makeGIF
-from concatData import concatFilelist
+from concatData import concatFilelistRNX, concatFilelistOBSNAV
 from clear_files import delFilesInDir
 
 validYes = ["y", "Y", "yes", "YES", "Yes"]
@@ -30,8 +30,6 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data/azielev", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/NAV_SUCCESS", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/obs", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/nav", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/hemi", exist_ok=True)
@@ -44,10 +42,20 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/gifs", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/palettes", exist_ok=True)
 
-def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
+def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=None):
     i = 1
     quit = False
     aws_fileset = set()
+
+    match mode:
+        case 3:
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/obs", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/nav", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
 
     try:
         while not quit:
@@ -57,7 +65,7 @@ def collectRINEXdata(waitTime=60, epochInterval=10, mode=1, comport=None):
                 case 2:
                     quit = UBXtoNAV(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case 3:
-                    quit = UBXtoNAVOBS(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                    quit = UBXtoNAVOBS(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case _:
                     quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
             i += 1
@@ -101,11 +109,11 @@ while True:
     opt2 = -1
     print("What would you like to do?")
     print("\t1) Collect RINEX Data")
-    print("\t2) AWS Download/Upload")
+    print("\t2) Combine RINEX files")
     print("\t3) Create GIF from RINEX files")
-    print("\t4) Clear Files")
-    print('\t5) Set output path ("." by default)')
-    print("\t6) Combine RINEX files")
+    print('\t4) Set output path ("." by default)')
+    print("\t5) AWS Download/Upload")
+    print("\t6) Clear Files")
     print("\t0) Quit")
     print()
     print("\t\t- ", end="")
@@ -120,6 +128,7 @@ while True:
 
     match opt1:
         case 1:
+            siteno = "invalid"
             mode = "invalid"
             wait = "invalid"
             epochInt = "invalid"
@@ -147,6 +156,18 @@ while True:
 
                 break
             print()
+
+            while siteno == "invalid":
+                print("Site number? (Must be unique)")
+                print("\t- ", end="")
+                siteno = input()
+                try:
+                    siteno = int(siteno)
+                except:
+                    print("Invalid input. Try again.")
+                    print()
+                    siteno = "invalid"
+                    continue
                 
             while mode == "invalid":
                 print("Collection mode?")
@@ -195,9 +216,121 @@ while True:
                     continue
                 print()
             
-            collectRINEXdata(wait, epochInt, mode, comport)
+            collectRINEXdata(wait, epochInt, siteno, mode, comport)
             print()
+
         case 2:
+            concatDirs = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS"]
+            inDir = ""
+            whichDir = -1
+
+            while whichDir != 0:
+                print("Concatenate which directory?")
+                i = 1
+                for dir in concatDirs:
+                    howManyFiles = 0
+                    for _, _, files in os.walk(f"{masterOutputPath}/{dir}"):
+                        howManyFiles += len(files) 
+                    print(f"{i}) {dir} - {howManyFiles} files")
+                    i += 1
+                print("0) Back")
+                print("\t- ", end="")
+                whichDir = input()
+                try:
+                    whichDir = int(whichDir)
+                except:
+                    print("Invalid input. Try again.")
+                    print()
+                    continue
+                print()
+
+                match whichDir:
+                    case 1:
+                        inDir = "RNX_SUCCESS"
+                    case 2:
+                        inDir = "NAV_SUCCESS"
+                    case 3:
+                        inDir = "OBSNAV_SUCCESS"
+
+                siteno = "invalid"
+                while siteno == "invalid":
+                    print("Which site?")
+                    i = 1
+                    for siteDir in os.listdir(f"{masterOutputPath}/{inDir}"):
+                        if siteDir != ".gitkeep":
+                            print(f"{siteDir[4:]}) {siteDir}")
+                        i += 1
+                    print("0) Back")
+                    print("\t- ", end="")
+                    siteno = input()
+                    try:
+                        siteno = int(siteno)
+                    except:
+                        print("Invalid input. Try again.")
+                        print()
+                        siteno = "invalid"
+                    print()
+
+                match whichDir:
+                    case 1:
+                        print("rnx")
+                        inDir = "RNX_SUCCESS"
+                        concatFilelistRNX(inDir, masterOutputPath)
+                        break
+                    case 2:
+                        print("nav")
+                        inDir = "NAV_SUCCESS"
+                        break
+                    case 3:
+                        print("obsnav")
+                        inDir = "OBSNAV_SUCCESS"
+                        concatFilelistOBSNAV(inDir, siteno, masterOutputPath)
+                        break
+                    case 0:
+                        break
+                    case _:
+                        print("Invalid input. Try again.")
+                        print()
+                        continue
+
+        case 3:
+            print("GIF conversion may take a while and use a good amount of RAM. Are you sure? y/n")
+            print("\t- ", end="")
+            contYes = input()
+            if contYes in validYes:
+                makeGIF(masterOutputPath)
+            else:
+                print()
+                continue
+
+        case 4:
+            while True:
+                print(f"Current output path: {masterOutputPath}")
+                print("Change directory? y/n")
+                print("\t- ", end="")
+                change = input()
+                print()
+                if change not in validYes:
+                    break
+
+                print("Input new output directory.")
+                print("\t- ", end="")
+                newDir = input()
+                if os.path.isdir(newDir) == False:
+                    print("Invalid directory! Does not exist.")
+                    continue
+                else:
+                    print("Output directory set!")
+                    masterOutputPath = newDir
+
+                    masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "w", encoding="utf-8")
+                    masterOutputFile.write(masterOutputPath)
+                    masterOutputFile.close()
+                    
+                    makeOutputDirs(masterOutputPath)
+                    break
+
+        case 5:
             while True:
                 print(f"Current AWS bucket: {bucketName}")
                 print("Set new bucket name? y/n")
@@ -253,24 +386,17 @@ while True:
                         print("Invalid input. Try again.")
                         print()
                         continue
-        case 3:
-            print("GIF conversion may take a while and use a good amount of RAM. Are you sure? y/n")
-            print("\t- ", end="")
-            contYes = input()
-            if contYes in validYes:
-                makeGIF(masterOutputPath)
-            else:
-                print()
-                continue
-        case 4:
+
+        case 6:
             while opt2 != 0:
                 show = False
                 print("Clear files from which directories?")
                 print("\t1) RNX_SUCCESS")
                 print("\t2) NAV_SUCCESS")
-                print("\t3) IMAGE_SUCCESS")
-                print("\t4) GIF_SUCCESS")
-                print("\t5) All of the above")
+                print("\t3) OBSNAV_SUCCESS")
+                print("\t4) IMAGE_SUCCESS")
+                print("\t5) GIF_SUCCESS")
+                print("\t6) All of the above")
                 print("\t0) Back")
                 print("\t\t- ", end="")
                 opt2 = input()
@@ -282,7 +408,7 @@ while True:
                     continue
 
                 dirs = []
-                delPaths = ["RNX_SUCCESS", "NAV_SUCCESS", "IMAGE_SUCCESS", "GIF_SUCCESS"]
+                delPaths = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS", "IMAGE_SUCCESS", "GIF_SUCCESS"]
                 match opt2:
                     case 1:
                         dirs.append(delPaths[0])
@@ -293,6 +419,8 @@ while True:
                     case 4:
                         dirs.append(delPaths[3])
                     case 5:
+                        dirs.append(delPaths[4])
+                    case 6:
                         for path in delPaths:
                             dirs.append(path)
                     case 0:
@@ -330,37 +458,11 @@ while True:
                         print("Aborting file deletion.")
                         print()
                         continue         
-        case 5:
-            while True:
-                print(f"Current output path: {masterOutputPath}")
-                print("Change directory? y/n")
-                print("\t- ", end="")
-                change = input()
-                print()
-                if change not in validYes:
-                    break
 
-                print("Input new output directory.")
-                print("\t- ", end="")
-                newDir = input()
-                if os.path.isdir(newDir) == False:
-                    print("Invalid directory! Does not exist.")
-                    continue
-                else:
-                    print("Output directory set!")
-                    masterOutputPath = newDir
-
-                    masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "w", encoding="utf-8")
-                    masterOutputFile.write(masterOutputPath)
-                    masterOutputFile.close()
-                    
-                    makeOutputDirs(masterOutputPath)
-                    break
-        case 6:
-            concatFilelist(f"{masterOutputPath}/RNX_SUCCESS/rinex", f"{masterOutputPath}/RNX_SUCCESS/azielev", masterOutputPath)
         case 0:
             print()
             sys.exit()
+
         case _:
             print("Invalid Input. Try again.")
 

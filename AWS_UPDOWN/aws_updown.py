@@ -27,7 +27,7 @@ def upload_file(file_name, bucket, object_name=None):
     return True
 
 def aws_upload(bucketName, fileset=set(), outputPath="."):
-    upload_dirs = ["IMAGE_SUCCESS", "RNX_SUCCESS", "GIF_SUCCESS", "NAV_SUCCESS"]
+    upload_dirs = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS","IMAGE_SUCCESS", "GIF_SUCCESS"]
 
     for dir in upload_dirs:
         for (root,dirs,files) in (os.walk(f"{outputPath}/{dir}",topdown=True)):
@@ -48,7 +48,7 @@ def aws_upload(bucketName, fileset=set(), outputPath="."):
     return fileset
 
 def aws_download(bucketName, outputPath="."):
-    dirs = ["RNX_SUCCESS/rinex","RNX_SUCCESS/azielev", "NAV_SUCCESS", "GIF_SUCCESS", "IMAGE_SUCCESS"]
+    dirs = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS","IMAGE_SUCCESS", "GIF_SUCCESS"]
     for dir in dirs:
         cmdstr = f"aws s3 cp s3://{bucketName}/{dir}/ {outputPath}/{dir}/ --recursive"
         subprocess.run(cmdstr, shell=True, check=True)
