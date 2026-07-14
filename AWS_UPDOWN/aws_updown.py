@@ -26,29 +26,36 @@ def upload_file(file_name, bucket, object_name=None):
         return False
     return True
 
-def aws_upload(bucketName, fileset=set(), outputPath="."):
+def aws_upload(bucketName, outputPath="."):
     upload_dirs = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS","IMAGE_SUCCESS", "GIF_SUCCESS"]
+
+    fileset = aws_list(bucketName)
 
     for dir in upload_dirs:
         for (root,dirs,files) in (os.walk(f"{outputPath}/{dir}",topdown=True)):
             for file in files:
                 if file == ".gitkeep":
                     continue
-                #print(root)
                 rootSplit = root.split("/")
                 for i in range(len(rootSplit)):
                     if rootSplit[i] in upload_dirs:
                         awsOutputPath = "/".join(rootSplit[i:])
-                #bucket_path = f"./{("/".join(root.split("/")[4:]))}/{file}"
                 bucket_path = f"{awsOutputPath}/{file}"
                 if bucket_path not in fileset:
                     print(bucket_path)
-                    if upload_file(f"{root}/{file}", f"{bucketName}", bucket_path) == True:
-                        fileset.add(bucket_path)
-    return fileset
+                    upload_file(f"{root}/{file}", f"{bucketName}", bucket_path)
 
 def aws_download(bucketName, outputPath="."):
     dirs = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS","IMAGE_SUCCESS", "GIF_SUCCESS"]
     for dir in dirs:
         cmdstr = f"aws s3 cp s3://{bucketName}/{dir}/ {outputPath}/{dir}/ --recursive"
         subprocess.run(cmdstr, shell=True, check=True)
+
+def aws_list(bucketName):
+    client = boto3.client('s3')
+    pages = client.get_paginator('list_objects_v2')
+    fileset = set()
+    for page in pages.paginate(Bucket=bucketName):
+        for content in page.get('Contents', []):
+            fileset.add(content['Key'])
+    return fileset

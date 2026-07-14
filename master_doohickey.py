@@ -45,7 +45,6 @@ def makeOutputDirs(masterOutputPath):
 def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=None):
     i = 1
     quit = False
-    aws_fileset = set()
 
     match mode:
         case 3:
@@ -83,7 +82,7 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
 
             print("Uploading RINEX and plots to AWS storage")
             try:
-                aws_fileset = aws_upload(bucketName, aws_fileset, masterOutputPath)
+                aws_upload(bucketName, masterOutputPath)
             except:
                 print("Upload failed! Check connection.")
             
