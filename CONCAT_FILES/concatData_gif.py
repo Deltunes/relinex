@@ -8,7 +8,7 @@ sys.path.insert(1, 'GNSSVOD')
 from gnssvod_oneSite import RNXtoIMG
 
 def concatFilelist(rnxFileDir: str, azielevFileDir: str, outputPath="."):
-    outputFilepath = f"{outputPath}/RNX_SUCCESS/concat/gif_data"
+    outputFilepath = f"{outputPath}/OBS_SUCCESS/concat/gif_data"
 
     rnxFileDict, azielevFileDict = getFilelist(rnxFileDir, azielevFileDir)
 

@@ -1,0 +1,10 @@
+python 3.13
+mamba install pyserial
+mamba install pyubx2
+mamba install pyubxutils
+mamba install pygnssutils
+mamba install boto3
+mamba install numpy
+mamba install xarray
+python -m pip install hatanaka
+python -m pip install gnssvod

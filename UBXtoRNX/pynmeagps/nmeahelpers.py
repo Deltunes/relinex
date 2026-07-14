@@ -837,34 +837,19 @@ def wnotow2utc(
         ep0 = EPOCH0_GPS
         rollover = 1024
 
-    # CHANGED CODE HERE
-    #print() 
-    #print(f"ep0 = {ep0}")
-    #print(f"wno = {wno}")
-    #print(f"rollover = {rollover}")
     wno = wno % rollover if modwno else wno
-    #print(f"wno after modwno = {wno}")
-    #print(f"tow = {tow}")
     tow %= 604800000
-    #print(f"tow after mod = {tow}")
 
     current = datetime.now(timezone.utc)
     i = 0
     while True:
         utc = ep0 + timedelta(days=(wno + (i * rollover)) * 7, milliseconds=tow)
-        #print(f"UTC {i} = {utc}")
         if gnss != GLO:  # apply leapsecond offset
             lps = leapsecond(utc, gnss) if ls is None else ls
             utc -= timedelta(seconds=lps)
         if not autoroll:
             break
-        #print(f"utc + days*rollover = \t{utc + timedelta(days=rollover * 7)}")
-        #print(f"current = \t\t{current}")
         if utc + timedelta(days=rollover * 7) > current + timedelta(hours=1):
             break
-
         i += 1
-    #print(utc)
-    #input()
     return utc
-    #return current

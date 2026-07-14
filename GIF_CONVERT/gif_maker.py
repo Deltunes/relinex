@@ -22,7 +22,7 @@ def getFilelist(imgfiledir: str):
 
 def makeGIF(outputPath="."):
     # Scale scatter plots for GIF conversion
-    concatFilelist(f"{outputPath}/RNX_SUCCESS/rinex", f"{outputPath}/RNX_SUCCESS/azielev", outputPath)
+    concatFilelist(f"{outputPath}/OBS_SUCCESS/rinex", f"{outputPath}/OBS_SUCCESS/azielev", outputPath)
     scatterFilepath = f"{outputPath}/IMAGE_SUCCESS/gif_imgs/scatter"
     fileset = getFilelist(scatterFilepath)
 

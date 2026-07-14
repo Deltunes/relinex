@@ -3,13 +3,15 @@ import subprocess
 from datetime import datetime
 import numpy as np
 
-def concatFilelistRNX(fileDir: str, outputPath="."):
+def concatFilelistOBS(fileDir: str, siteno: int, outputPath="."):
+    print(f"fileDir = {fileDir}")
+    print(f"siteno = {siteno}")
+    print(f"outputPath = {outputPath}")
+    outputFilepath = f"{outputPath}/{fileDir}/site{siteno}/concat"
+    rnxFileDir = f"{outputPath}/{fileDir}/site{siteno}/obs"
+    azielevFileDir = f"{outputPath}/{fileDir}/site{siteno}/azielev"
 
-    outputFilepath = f"{outputPath}/{fileDir}/concat"
-    rnxFileDir = f"{outputPath}/{fileDir}/rinex"
-    azielevFileDir = f"{outputPath}/{fileDir}/azielev"
-
-    rnxFileDict, azielevFileDict = getFilelistRNX(rnxFileDir, azielevFileDir)
+    rnxFileDict, azielevFileDict = getFilelistOBS(rnxFileDir, azielevFileDir, siteno)
 
     rnxFileTupleSorted = sorted(rnxFileDict.items())
     rnxFilelist = []
@@ -61,7 +63,7 @@ def concatFilelistRNX(fileDir: str, outputPath="."):
     for rnxFilepath in rnxFilelist:
         RNXformatEdit(rnxFilepath)
         rnxFilename = rnxFilepath.split("/")[-1].split(".")[0]
-        epochRange = "_".join(rnxFilename.split("_")[1:])
+        epochRange = "_".join(rnxFilename.split("_")[2:])
 
         epochSplit = epochRange.split("-")
         epochFirst = datetime.strptime(epochSplit[0], "%Y_%m_%d_%H_%M_%S")
@@ -78,12 +80,12 @@ def concatFilelistRNX(fileDir: str, outputPath="."):
     epochLastAll = epochLastAll.strftime("%Y_%m_%d_%H_%M_%S")
 
     cmdstr.append("-fout")
-    cmdstr.append(f"{outputFilepath}/rinex/success_{epochFirstAll}-{epochLastAll}.rnx")
+    cmdstr.append(f"{outputFilepath}/obs/obs_site{siteno}_{epochFirstAll}-{epochLastAll}.rnx")
     cmdstr.append("-f")
     subprocess.run(cmdstr)
 
     # AZIMUTH & ELEVATION CONCAT
-    azielevConcat = open(f"{outputFilepath}/azielev/azielev_{epochFirstAll}-{epochLastAll}.txt", "w", encoding="utf-8")
+    azielevConcat = open(f"{outputFilepath}/azielev/azielev_site{siteno}_{epochFirstAll}-{epochLastAll}.txt", "w", encoding="utf-8")
     azielevConcat.write("")
     azielevConcat.close()
     for azielevFilepath in azielevFilelist:
@@ -91,7 +93,7 @@ def concatFilelistRNX(fileDir: str, outputPath="."):
         azielevData = azielevFile.read()
         azielevFile.close()
 
-        azielevConcat = open(f"{outputFilepath}/azielev/azielev_{epochFirstAll}-{epochLastAll}.txt", "a", encoding="utf-8")
+        azielevConcat = open(f"{outputFilepath}/azielev/azielev_site{siteno}_{epochFirstAll}-{epochLastAll}.txt", "a", encoding="utf-8")
         azielevConcat.write(azielevData)
         azielevConcat.close()
 
@@ -207,18 +209,18 @@ def concatFilelistOBSNAV(fileDir: str, siteno: int, outputPath="."):
     cmdstr.append("-f")
     subprocess.run(cmdstr)
 
-def getFilelistRNX(rnxfiledir: str, azielevfiledir: str):
+def getFilelistOBS(rnxfiledir: str, azielevfiledir: str, siteno: int):
     rnxFileDict = dict()
     azielevFileDict = dict()
+
     for filepath in os.listdir(rnxfiledir):
         try:
             filenameSplit = filepath.split(".")
             extension = filenameSplit[-1]
             filename = filenameSplit[0]
-            filenamePrefix = "_".join(filename.split("_")[0:1])
-            filenameEpochRange = "_".join(filename.split("_")[1:])
-            print(filenamePrefix)
-            if extension == "rnx" and filenamePrefix == "success":
+            filenamePrefix = "_".join(filename.split("_")[0:2])
+            filenameEpochRange = "_".join(filename.split("_")[2:])
+            if extension == "rnx" and filenamePrefix == f"obs_site{siteno}":
                 firstDatetimeStr = filenameEpochRange.split("-")[0]
                 firstDatetime = datetime.strptime(firstDatetimeStr, "%Y_%m_%d_%H_%M_%S")
                 rnxFileDict[firstDatetime] = f"{rnxfiledir}/{filepath}"
@@ -230,9 +232,9 @@ def getFilelistRNX(rnxfiledir: str, azielevfiledir: str):
             filenameSplit = filepath.split(".")
             extension = filenameSplit[-1]
             filename = filenameSplit[0]
-            filenamePrefix = "_".join(filename.split("_")[0:1])
-            filenameEpochRange = "_".join(filename.split("_")[1:])
-            if extension == "txt" and filenamePrefix == "azielev":
+            filenamePrefix = "_".join(filename.split("_")[0:2])
+            filenameEpochRange = "_".join(filename.split("_")[2:])
+            if extension == "txt" and filenamePrefix == f"azielev_site{siteno}":
                 firstDatetimeStr = filenameEpochRange.split("-")[0]
                 firstDatetime = datetime.strptime(firstDatetimeStr, "%Y_%m_%d_%H_%M_%S")
                 azielevFileDict[firstDatetime] = f"{azielevfiledir}/{filepath}"

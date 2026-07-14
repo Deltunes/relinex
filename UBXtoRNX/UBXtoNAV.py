@@ -32,7 +32,7 @@ def UBXtoNAV(fileno, waitTime=60, epochInterval=10, outputPath=".", comport=None
     COMPORT = comport
     # Connect to Sparkfun chip through COMPORT
     try:
-        stream = Serial(COMPORT, 9600, timeout=10)
+        stream = Serial(COMPORT, 115200, timeout=10)
         ubr = UBXReader(stream)
         
         cfg_data = [

@@ -2,7 +2,7 @@ import time
 from serial import Serial
 from pyubx2 import UBXReader, UBXMessage, SET_LAYER_RAM, SET_LAYER_BBR
 from pygnssutils.rinex_conv import RinexConverter
-from pygnssutils.rinex_globals import OBS, NAV, EPOCHMIN
+from pygnssutils.rinex_globals import OBS, EPOCHMIN
 import sys
 import os
 
@@ -29,6 +29,7 @@ def mkconv():
         comments=[],
     )
 
+# Write Azimuth and Elevation to .txt file
 def writeazielev(conv, currEpoch, azielevFile, azielevDict):
     currEpoch = getEpoch(conv, currEpoch)
 
@@ -122,21 +123,15 @@ def RNXformatEdit(rnxFilepath):
     rplcRNX.write(rplcData)
     rplcRNX.close()
 
-def renameFilesWithEpoch(rnxFilepathOBS, rnxFilepathNAV, azielevFilepath, firstEpoch, lastEpoch):
+def renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch):
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
 
-    rnxFileSplitOBS = rnxFilepathOBS.split("/")
-    rnxFilenameOBS = rnxFileSplitOBS[-1]
-    rnxFilePrefixOBS = "_".join(rnxFilenameOBS.split("_")[:-1])
-    rnxFileSplitOBS[-1] = f"{rnxFilePrefixOBS}_{firstEpoch}-{lastEpoch}.rnx"
-    rnxFilepathNewOBS = "/".join(rnxFileSplitOBS)
-
-    rnxFileSplitNAV = rnxFilepathNAV.split("/")
-    rnxFilenameNAV = rnxFileSplitNAV[-1]
-    rnxFilePrefixNAV = "_".join(rnxFilenameNAV.split("_")[:-1])
-    rnxFileSplitNAV[-1] = f"{rnxFilePrefixNAV}_{firstEpoch}-{lastEpoch}.rnx"
-    rnxFilepathNewNAV = "/".join(rnxFileSplitNAV)
+    rnxFileSplit = rnxFilepath.split("/")
+    rnxFilename = rnxFileSplit[-1]
+    rnxFilePrefix = "_".join(rnxFilename.split("_")[:-1])
+    rnxFileSplit[-1] = f"{rnxFilePrefix}_{firstEpoch}-{lastEpoch}.rnx"
+    rnxFilepathNew = "/".join(rnxFileSplit)
 
     azielevFileSplit = azielevFilepath.split("/")
     azielevFilename = azielevFileSplit[-1]
@@ -144,8 +139,7 @@ def renameFilesWithEpoch(rnxFilepathOBS, rnxFilepathNAV, azielevFilepath, firstE
     azielevFileSplit[-1] = f"{azielevFilePrefix}_{firstEpoch}-{lastEpoch}.txt"
     azielevFilepathNew = "/".join(azielevFileSplit)
 
-    os.rename(f"{rnxFilepathOBS}", f"{rnxFilepathNewOBS}")
-    os.rename(f"{rnxFilepathNAV}", f"{rnxFilepathNewNAV}")
+    os.rename(f"{rnxFilepath}", f"{rnxFilepathNew}")
     os.rename(f"{azielevFilepath}", f"{azielevFilepathNew}")
 
 def getEpoch(conv, currEpoch):
@@ -159,11 +153,11 @@ def getEpoch(conv, currEpoch):
     if currEpoch != newEpoch:
         return newEpoch
 
-def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
+def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
     COMPORT = comport
     # Connect to Sparkfun chip through COMPORT
     try:
-        stream = Serial(COMPORT,  115200, timeout=10)
+        stream = Serial(COMPORT, 115200, timeout=10)
         ubr = UBXReader(stream)
 
         cfg_data = [
@@ -192,18 +186,15 @@ def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", c
         lastEpoch = None
 
         # Set RINEX and AZIELEV filenames
-        rnxFilepathOBS = f"{outputPath}/OBSNAV_SUCCESS/site{siteno}/obs/obs_site{siteno}_{fileno}.rnx"
-        rnxFilepathNAV = f"{outputPath}/OBSNAV_SUCCESS/site{siteno}/nav/nav_site{siteno}_{fileno}.rnx"
-        azielevFilepath = f"{outputPath}/OBSNAV_SUCCESS/site{siteno}/azielev/azielev_site{siteno}_{fileno}.txt"
+        rnxFilepath = f"{outputPath}/OBS_SUCCESS/site{siteno}/obs/obs_site{siteno}_{fileno}.rnx"
+        azielevFilepath = f"{outputPath}/OBS_SUCCESS/site{siteno}/azielev/azielev_site{siteno}_{fileno}.txt"
         azielevFile = open(azielevFilepath, "w", encoding="utf-8")
         azielevFile.write("")
         azielevFile.close()
 
         # Set up file stream for RINEX file output
-        conv._outputs[OBS]["fnm"] = rnxFilepathOBS
-        conv._outputs[OBS]["stm"] = open(rnxFilepathOBS, "w", encoding="utf-8")
-        conv._outputs[NAV]["fnm"] = rnxFilepathNAV
-        conv._outputs[NAV]["stm"] = open(rnxFilepathNAV, "w", encoding="utf-8")
+        conv._outputs[OBS]["fnm"] = rnxFilepath
+        conv._outputs[OBS]["stm"] = open(rnxFilepath, "w", encoding="utf-8")
 
         # Countdown setup
         currIntTime = waitTime
@@ -223,7 +214,7 @@ def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", c
             if msg == None:
                 print("No message received.")
                 continue
-
+            
             # Azimuth/Elevation data is received from NAV-SAT messages
             # Collect azielev data from msg
             if (msg.identity == "NAV-SAT"):
@@ -256,34 +247,28 @@ def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", c
                 # only process epoch input every (epochInterval) seconds
                 currSec = int(msg.rcvTow)
                 if ((currSec % epochInterval) == 0):
-                    input_prcOBS = conv._outputs[OBS]["hnd"].process_input_data(msg)
-                    input_prcNAV = conv._outputs[NAV]["hnd"].process_input_data(msg)
+                    input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
                 else:
-                    input_prcOBS = 0
-                    input_prcNAV = 0
+                    input_prc = 0
             else:
                 # process any other message identity
-                input_prcOBS = conv._outputs[OBS]["hnd"].process_input_data(msg)
-                input_prcNAV = conv._outputs[NAV]["hnd"].process_input_data(msg)
+                input_prc = conv._outputs[OBS]["hnd"].process_input_data(msg)
 
-            conv._outputs[OBS]["prc"] += input_prcOBS
-            conv._outputs[NAV]["prc"] += input_prcNAV
-            
+            conv._outputs[OBS]["prc"] += input_prc
+
             if firstEpoch == None or firstEpoch == EPOCHMIN:
                 firstEpoch = getEpoch(conv, currEpoch)
-            
+
         # Output files
         conv.process_output_data(["O"])
-        conv.process_output_data(["N"])
         conv._outputs[OBS]["stm"].close()
-        conv._outputs[NAV]["stm"].close()
 
         while lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)
-        
-        RNXformatEdit(rnxFilepathOBS)
-        correctazielev(rnxFilepathOBS, azielevFilepath)
-        renameFilesWithEpoch(rnxFilepathOBS, rnxFilepathNAV, azielevFilepath, firstEpoch, lastEpoch)
+
+        RNXformatEdit(rnxFilepath)
+        correctazielev(rnxFilepath, azielevFilepath)
+        renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch) 
 
         print()
         quit = False
@@ -295,18 +280,14 @@ def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", c
         if (conv._outputs[OBS]["stm"].closed == False):
             conv.process_output_data(["O"])
             conv._outputs[OBS]["stm"].close()
-            RNXformatEdit(rnxFilepathOBS)
-        if (conv._outputs[NAV]["stm"].closed == False):
-            conv.process_output_data(["N"])
-            conv._outputs[NAV]["stm"].close()
-            RNXformatEdit(rnxFilepathNAV)
+            RNXformatEdit(rnxFilepath)
 
         # Write incomplete AZIELEV data
         if (azielevFile.closed == False):
             currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
             azielevFile.close()
-        correctazielev(rnxFilepathOBS, azielevFilepath)
-        renameFilesWithEpoch(rnxFilepathOBS, rnxFilepathNAV, azielevFilepath, firstEpoch, lastEpoch)
+        correctazielev(rnxFilepath, azielevFilepath)
+        renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch)
 
         print()
         quit = True
@@ -317,10 +298,10 @@ if __name__ == "__main__":
     i = 1
     while True:
         if len(sys.argv) > 2:
-            UBXtoNAVOBS(i, int(sys.argv[1]),int(sys.argv[2]))
+            UBXtoOBS(i, int(sys.argv[1]),int(sys.argv[2]))
         elif len(sys.argv) > 1:
-            UBXtoNAVOBS(i, int(sys.argv[1]))
+            UBXtoOBS(i, int(sys.argv[1]))
         else:
-            UBXtoNAVOBS(i)
+            UBXtoOBS(i)
         i += 1
 """

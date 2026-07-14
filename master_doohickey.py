@@ -7,27 +7,22 @@ sys.path.insert(2, 'GNSSVOD')
 sys.path.insert(3, 'AWS_UPDOWN')
 sys.path.insert(4, 'GIF_CONVERT')
 sys.path.insert(5, 'CONCAT_FILES')
-from UBXtoRNX import UBXtoRNX
+from UBXtoOBS import UBXtoOBS
 from UBXtoNAV import UBXtoNAV
 from UBXtoNAVOBS import UBXtoNAVOBS
 from aws_updown import aws_download, aws_upload
 from gif_maker import makeGIF
-from concatData import concatFilelistRNX, concatFilelistOBSNAV
+from concatData import concatFilelistOBS, concatFilelistOBSNAV
 from clear_files import delFilesInDir
 
 validYes = ["y", "Y", "yes", "YES", "Yes"]
 
 def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/rinex", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/azielev", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/rinex", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/azielev", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data/rinex", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/RNX_SUCCESS/concat/gif_data/azielev", exist_ok=True)
+
+    os.makedirs(f"{masterOutputPath}/OBS_SUCCESS", exist_ok=True)
+
+    os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/NAV_SUCCESS", exist_ok=True)
 
@@ -47,26 +42,38 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
     quit = False
 
     match mode:
+        case 1:
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/obs", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/azielev", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/obs", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/azielev", exist_ok=True)
+
         case 3:
-            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/obs", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/nav", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/azielev", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
+
 
     try:
         while not quit:
             match mode:
                 case 1:
-                    quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                    quit = UBXtoOBS(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case 2:
                     quit = UBXtoNAV(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case 3:
                     quit = UBXtoNAVOBS(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case _:
-                    quit = UBXtoRNX(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                    quit = UBXtoOBS(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
             i += 1
 
             try:
@@ -167,6 +174,7 @@ while True:
                     print()
                     siteno = "invalid"
                     continue
+            print()
                 
             while mode == "invalid":
                 print("Collection mode?")
@@ -219,7 +227,7 @@ while True:
             print()
 
         case 2:
-            concatDirs = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS"]
+            concatDirs = ["OBS_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS"]
             inDir = ""
             whichDir = -1
 
@@ -245,7 +253,7 @@ while True:
 
                 match whichDir:
                     case 1:
-                        inDir = "RNX_SUCCESS"
+                        inDir = "OBS_SUCCESS"
                     case 2:
                         inDir = "NAV_SUCCESS"
                     case 3:
@@ -273,8 +281,8 @@ while True:
                 match whichDir:
                     case 1:
                         print("rnx")
-                        inDir = "RNX_SUCCESS"
-                        concatFilelistRNX(inDir, masterOutputPath)
+                        inDir = "OBS_SUCCESS"
+                        concatFilelistOBS(inDir, siteno, masterOutputPath)
                         break
                     case 2:
                         print("nav")
@@ -390,7 +398,7 @@ while True:
             while opt2 != 0:
                 show = False
                 print("Clear files from which directories?")
-                print("\t1) RNX_SUCCESS")
+                print("\t1) OBS_SUCCESS")
                 print("\t2) NAV_SUCCESS")
                 print("\t3) OBSNAV_SUCCESS")
                 print("\t4) IMAGE_SUCCESS")
@@ -407,7 +415,7 @@ while True:
                     continue
 
                 dirs = []
-                delPaths = ["RNX_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS", "IMAGE_SUCCESS", "GIF_SUCCESS"]
+                delPaths = ["OBS_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS", "IMAGE_SUCCESS", "GIF_SUCCESS"]
                 match opt2:
                     case 1:
                         dirs.append(delPaths[0])
