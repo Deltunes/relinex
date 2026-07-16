@@ -110,7 +110,7 @@ def correctazielev(rnxFilepath, azielevFilepath):
     azielevFile.close()
 
 # Reformat RINEX file so that GNSS-VOD can read it
-def RNXformatEdit(rnxFilepath):
+def formatOBS(rnxFilepath):
     # Reformat RINEX file to work with GNSSVODs
     rplcRNX = open(rnxFilepath, "r", encoding="utf-8")
     rplcData = rplcRNX.read()
@@ -149,9 +149,7 @@ def getEpoch(conv, currEpoch):
     if newEpoch == EPOCHMIN:
         return currEpoch
     
-    # If epoch has changed since last check
-    if currEpoch != newEpoch:
-        return newEpoch
+    return newEpoch
 
 def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comport=None):
     COMPORT = comport
@@ -238,9 +236,10 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
                     azielevDict[id] = azielev
                 
                 # Write azielev data w/ current epoch
-                azielevFile = open(azielevFilepath, "a", encoding="utf-8")
-                currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
-                azielevFile.close()
+                if firstEpoch != None and firstEpoch != EPOCHMIN:
+                    azielevFile = open(azielevFilepath, "a", encoding="utf-8")
+                    currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
+                    azielevFile.close()
 
             # RXM-RAWX is received every second
             if (msg.identity == "RXM-RAWX"):
@@ -266,7 +265,7 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         while lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)
 
-        RNXformatEdit(rnxFilepath)
+        formatOBS(rnxFilepath)
         correctazielev(rnxFilepath, azielevFilepath)
         renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch) 
 
@@ -280,12 +279,14 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         if (conv._outputs[OBS]["stm"].closed == False):
             conv.process_output_data(["O"])
             conv._outputs[OBS]["stm"].close()
-            RNXformatEdit(rnxFilepath)
+            formatOBS(rnxFilepath)
 
         # Write incomplete AZIELEV data
         if (azielevFile.closed == False):
             currEpoch = writeazielev(conv, currEpoch, azielevFile, azielevDict)
             azielevFile.close()
+        if lastEpoch == None:
+            lastEpoch = getEpoch(conv, currEpoch)
         correctazielev(rnxFilepath, azielevFilepath)
         renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch)
 

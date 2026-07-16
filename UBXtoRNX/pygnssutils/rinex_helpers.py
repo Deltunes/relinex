@@ -97,7 +97,9 @@ def get_epoch(
     epoch = wnotow2utc(
         wno=wno,
         tow=int(tow*1000),
-        ls=None,
+        # CHANGED CODE
+        #ls=None,
+        ls=0,
         gnss=gnss,
         autoroll=True,
         modwno=True,

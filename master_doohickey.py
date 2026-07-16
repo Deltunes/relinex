@@ -12,7 +12,7 @@ from UBXtoNAV import UBXtoNAV
 from UBXtoNAVOBS import UBXtoNAVOBS
 from aws_updown import aws_download, aws_upload
 from gif_maker import makeGIF
-from concatData import concatFilelistOBS, concatFilelistOBSNAV
+from concatData import concatFilelistOBS, concatFilelistNAV, concatFilelistOBSNAV
 from clear_files import delFilesInDir
 
 validYes = ["y", "Y", "yes", "YES", "Yes"]
@@ -22,9 +22,9 @@ def makeOutputDirs(masterOutputPath):
 
     os.makedirs(f"{masterOutputPath}/OBS_SUCCESS", exist_ok=True)
 
-    os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS", exist_ok=True)
-
     os.makedirs(f"{masterOutputPath}/NAV_SUCCESS", exist_ok=True)
+
+    os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS", exist_ok=True)
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/hemi", exist_ok=True)
@@ -52,6 +52,11 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
             os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/obs", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/azielev", exist_ok=True)
 
+        case 2:
+            os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/nav", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/concat", exist_ok=True)
+            os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
+
         case 3:
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/obs", exist_ok=True)
@@ -69,7 +74,7 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
                 case 1:
                     quit = UBXtoOBS(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case 2:
-                    quit = UBXtoNAV(fileno=i, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
+                    quit = UBXtoNAV(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case 3:
                     quit = UBXtoNAVOBS(fileno=i, siteno=siteno, waitTime=waitTime, epochInterval=epochInterval, outputPath=masterOutputPath, comport=comport)
                 case _:
@@ -83,10 +88,6 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
             except:
                 print("Could not retrieve Raspberry Pi hardware info.")
 
-            if quit:
-                print("Quitting...")
-                break
-
             print("Uploading RINEX and plots to AWS storage")
             try:
                 aws_upload(bucketName, masterOutputPath)
@@ -94,7 +95,7 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
                 print("Upload failed! Check connection.")
             
     except KeyboardInterrupt:
-        print("Keyboard Interrupt! Quitting...")
+        print("Quitting...")
 
 masterOutputFile = open("PERSISTENT_VAR/masterOutputPath.txt", "r", encoding="utf-8")
 masterOutputPath = masterOutputFile.readline()
@@ -162,19 +163,6 @@ while True:
 
                 break
             print()
-
-            while siteno == "invalid":
-                print("Site number? (Must be unique)")
-                print("\t- ", end="")
-                siteno = input()
-                try:
-                    siteno = int(siteno)
-                except:
-                    print("Invalid input. Try again.")
-                    print()
-                    siteno = "invalid"
-                    continue
-            print()
                 
             while mode == "invalid":
                 print("Collection mode?")
@@ -197,8 +185,24 @@ while True:
                     continue
                 print()
 
+            while siteno == "invalid":
+                print("Site number? (Must be unique)")
+                print("\t- ", end="")
+                siteno = input()
+                try:
+                    siteno = int(siteno)
+                except:
+                    print("Invalid input. Try again.")
+                    print()
+                    siteno = "invalid"
+                    continue
+            print()
+
             while wait == "invalid":
-                print("Time between files? (in seconds)")
+                if mode in [2,3]:
+                    print("Time between files? (in seconds, must be >=60s to properly record navigation files)")
+                else:
+                    print("Time between files? (in seconds)")
                 print("\t- ", end="")
                 wait = input()
                 try:
@@ -280,16 +284,14 @@ while True:
 
                 match whichDir:
                     case 1:
-                        print("rnx")
                         inDir = "OBS_SUCCESS"
                         concatFilelistOBS(inDir, siteno, masterOutputPath)
                         break
                     case 2:
-                        print("nav")
                         inDir = "NAV_SUCCESS"
+                        concatFilelistNAV(inDir, siteno, masterOutputPath)
                         break
                     case 3:
-                        print("obsnav")
                         inDir = "OBSNAV_SUCCESS"
                         concatFilelistOBSNAV(inDir, siteno, masterOutputPath)
                         break

@@ -6,19 +6,20 @@ azielevData = open("azielev.txt", "w", encoding="utf-8")
 azielevData.write("")
 azielevData.close()
 
-elevationData = open("sat_elevation.csv", "r", encoding="utf-8")
+elevationData = open("sat_elevation_test3.csv", "r", encoding="utf-8")
 elevationLines = elevationData.readlines()
 elevationData.close()
 
-wno = 2427
 prev_wnotow = datetime.min
 epochFirst = datetime.max
 epochLast = datetime.min
-for line in elevationLines:
+for line in elevationLines[1:]:
     lineSplit = line.split(",")
-    tow = int(lineSplit[0])
-    satID = lineSplit[1]
-    elev = int(float(lineSplit[2]))
+    wno = int(lineSplit[0])
+    tow = int(lineSplit[1])
+    satID = lineSplit[2]
+    azi = int(float(lineSplit[3]))
+    elev = int(float(lineSplit[4]))
 
     wnotow = wnotow2utc(wno, tow, autoroll=True, modwno=True).replace(tzinfo=None)
 
@@ -31,10 +32,10 @@ for line in elevationLines:
     if (wnotow > prev_wnotow):
         prev_wnotow = wnotow
         azielevData.write(f">/{wnotow.strftime("%Y/%m/%d/%H/%M/%S")}\n")
-    azielevData.write(f"{satID}/azimuth/{elev}\n")
+    azielevData.write(f"{satID}/{azi}/{elev}\n")
     azielevData.close()
 
 epochFirst = epochFirst.strftime("%Y_%m_%d_%H_%M_%S")
 epochLast = epochLast.strftime("%Y_%m_%d_%H_%M_%S")
 
-os.rename("azielev.txt", f"azielev_{epochFirst}-{epochLast}")
+os.rename("azielev.txt", f"azielev_{epochFirst}-{epochLast}.txt")
