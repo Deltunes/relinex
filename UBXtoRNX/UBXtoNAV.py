@@ -28,6 +28,18 @@ def mkconv():
         comments=[],
     )
 
+def formatNAV(navFilepath):
+    # Reformat RINEX file to work with GNSSVODs
+    navFile = open(navFilepath, "r", encoding="utf-8")
+    navLines = navFile.readlines()
+    navFile.close()
+    
+    navFile = open(navFilepath, "w", encoding="utf-8")
+    for line in navLines:
+        if "LEAPSECONDS" not in line:
+            navFile.write(line)
+    navFile.close()
+
 def renameFilesWithEpoch(navFilepath, firstEpoch, lastEpoch):
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
@@ -125,16 +137,13 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
                 firstEpoch = getEpoch(conv, currEpoch)
 
         # Output files
-
-        print("last epoch while loop")
-        while lastEpoch == None or lastEpoch == EPOCHMIN:
-            print("loop")
-            lastEpoch = getEpoch(conv, currEpoch)
-            print(lastEpoch)
-
         conv.process_output_data(["N"])
         conv._outputs[NAV]["stm"].close()
 
+        while lastEpoch == None or lastEpoch == EPOCHMIN:
+            lastEpoch = getEpoch(conv, currEpoch)
+
+        formatNAV(navFilepath)
         renameFilesWithEpoch(navFilepath, firstEpoch, lastEpoch)
 
         print()
@@ -147,6 +156,7 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         if (conv._outputs[NAV]["stm"].closed == False):
             conv.process_output_data(["N"])
             conv._outputs[NAV]["stm"].close()
+            formatNAV(navFilepath)
 
         if lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)

@@ -121,6 +121,18 @@ def formatOBS(obsFilepath):
     rplcRNX.write(rplcData)
     rplcRNX.close()
 
+def formatNAV(navFilepath):
+    # Reformat RINEX file to work with GNSSVODs
+    navFile = open(navFilepath, "r", encoding="utf-8")
+    navLines = navFile.readlines()
+    navFile.close()
+    
+    navFile = open(navFilepath, "w", encoding="utf-8")
+    for line in navLines:
+        if "LEAPSECONDS" not in line:
+            navFile.write(line)
+    navFile.close()
+
 def renameFilesWithEpoch(obsFilepath, navFilepath, azielevFilepath, firstEpoch, lastEpoch):
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
@@ -280,6 +292,7 @@ def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", c
             lastEpoch = getEpoch(conv, currEpoch)
         
         formatOBS(obsFilepath)
+        formatNAV(navFilepath)
         correctazielev(obsFilepath, azielevFilepath)
         renameFilesWithEpoch(obsFilepath, navFilepath, azielevFilepath, firstEpoch, lastEpoch)
 
@@ -297,7 +310,7 @@ def UBXtoNAVOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", c
         if (conv._outputs[NAV]["stm"].closed == False):
             conv.process_output_data(["N"])
             conv._outputs[NAV]["stm"].close()
-            formatOBS(navFilepath)
+            formatNAV(navFilepath)
 
         # Write incomplete AZIELEV data
         if (azielevFile.closed == False):

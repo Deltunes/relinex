@@ -200,7 +200,7 @@ while True:
 
             while wait == "invalid":
                 if mode in [2,3]:
-                    print("Time between files? (in seconds, must be >=60s to properly record navigation files)")
+                    print("Time between files? (in seconds, should be >=90s to properly record navigation files)")
                 else:
                     print("Time between files? (in seconds)")
                 print("\t- ", end="")

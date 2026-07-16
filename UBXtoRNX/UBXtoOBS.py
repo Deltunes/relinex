@@ -49,10 +49,10 @@ def writeazielev(conv, currEpoch, azielevFile, azielevDict):
         azielevFile.write("\n")
     return currEpoch
 
-def correctazielev(rnxFilepath, azielevFilepath):
+def correctazielev(obsFilepath, azielevFilepath):
     #   DATA RETRIEVAL FROM FILES
     # Open RINEX file to read
-    rnxFile = open(rnxFilepath, "r", encoding="utf-8")
+    rnxFile = open(obsFilepath, "r", encoding="utf-8")
     rnxData = rnxFile.readlines()
     rnxFile.close()
 
@@ -110,28 +110,28 @@ def correctazielev(rnxFilepath, azielevFilepath):
     azielevFile.close()
 
 # Reformat RINEX file so that GNSS-VOD can read it
-def formatOBS(rnxFilepath):
+def formatOBS(obsFilepath):
     # Reformat RINEX file to work with GNSSVODs
-    rplcRNX = open(rnxFilepath, "r", encoding="utf-8")
+    rplcRNX = open(obsFilepath, "r", encoding="utf-8")
     rplcData = rplcRNX.read()
     rplcRNX.close()
     
     rplcData = rplcData.replace("\n→","")
     rplcData = rplcData.replace("END OF FILE                                                 COMMENT\n","")
     
-    rplcRNX = open(rnxFilepath, "w", encoding="utf-8")
+    rplcRNX = open(obsFilepath, "w", encoding="utf-8")
     rplcRNX.write(rplcData)
     rplcRNX.close()
 
-def renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch):
+def renameFilesWithEpoch(obsFilepath, azielevFilepath, firstEpoch, lastEpoch):
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
 
-    rnxFileSplit = rnxFilepath.split("/")
+    rnxFileSplit = obsFilepath.split("/")
     rnxFilename = rnxFileSplit[-1]
     rnxFilePrefix = "_".join(rnxFilename.split("_")[:-1])
     rnxFileSplit[-1] = f"{rnxFilePrefix}_{firstEpoch}-{lastEpoch}.rnx"
-    rnxFilepathNew = "/".join(rnxFileSplit)
+    obsFilepathNew = "/".join(rnxFileSplit)
 
     azielevFileSplit = azielevFilepath.split("/")
     azielevFilename = azielevFileSplit[-1]
@@ -139,7 +139,7 @@ def renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch):
     azielevFileSplit[-1] = f"{azielevFilePrefix}_{firstEpoch}-{lastEpoch}.txt"
     azielevFilepathNew = "/".join(azielevFileSplit)
 
-    os.rename(f"{rnxFilepath}", f"{rnxFilepathNew}")
+    os.rename(f"{obsFilepath}", f"{obsFilepathNew}")
     os.rename(f"{azielevFilepath}", f"{azielevFilepathNew}")
 
 def getEpoch(conv, currEpoch):
@@ -184,15 +184,15 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         lastEpoch = None
 
         # Set RINEX and AZIELEV filenames
-        rnxFilepath = f"{outputPath}/OBS_SUCCESS/site{siteno}/obs/obs_site{siteno}_{fileno}.rnx"
+        obsFilepath = f"{outputPath}/OBS_SUCCESS/site{siteno}/obs/obs_site{siteno}_{fileno}.rnx"
         azielevFilepath = f"{outputPath}/OBS_SUCCESS/site{siteno}/azielev/azielev_site{siteno}_{fileno}.txt"
         azielevFile = open(azielevFilepath, "w", encoding="utf-8")
         azielevFile.write("")
         azielevFile.close()
 
         # Set up file stream for RINEX file output
-        conv._outputs[OBS]["fnm"] = rnxFilepath
-        conv._outputs[OBS]["stm"] = open(rnxFilepath, "w", encoding="utf-8")
+        conv._outputs[OBS]["fnm"] = obsFilepath
+        conv._outputs[OBS]["stm"] = open(obsFilepath, "w", encoding="utf-8")
 
         # Countdown setup
         currIntTime = waitTime
@@ -265,9 +265,9 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         while lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)
 
-        formatOBS(rnxFilepath)
-        correctazielev(rnxFilepath, azielevFilepath)
-        renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch) 
+        formatOBS(obsFilepath)
+        correctazielev(obsFilepath, azielevFilepath)
+        renameFilesWithEpoch(obsFilepath, azielevFilepath, firstEpoch, lastEpoch) 
 
         print()
         quit = False
@@ -279,7 +279,7 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         if (conv._outputs[OBS]["stm"].closed == False):
             conv.process_output_data(["O"])
             conv._outputs[OBS]["stm"].close()
-            formatOBS(rnxFilepath)
+            formatOBS(obsFilepath)
 
         # Write incomplete AZIELEV data
         if (azielevFile.closed == False):
@@ -287,8 +287,8 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
             azielevFile.close()
         if lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)
-        correctazielev(rnxFilepath, azielevFilepath)
-        renameFilesWithEpoch(rnxFilepath, azielevFilepath, firstEpoch, lastEpoch)
+        correctazielev(obsFilepath, azielevFilepath)
+        renameFilesWithEpoch(obsFilepath, azielevFilepath, firstEpoch, lastEpoch)
 
         print()
         quit = True
