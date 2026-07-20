@@ -382,8 +382,7 @@ def add_azi_ele(filename: str,
     # CHANGED CODE HERE
     # calculate the gnss parameters (including azimuth and elevation)
     #gnssdf = gnssDataframe(obs,orbit,cut_off=-10)
-    
-    print("test")
+
     epochRange = ""
     epochNums = False
     filepath = "/".join(filename.split("/")[:-2])

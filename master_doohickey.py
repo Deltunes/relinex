@@ -10,6 +10,7 @@ sys.path.insert(5, 'CONCAT_FILES')
 from UBXtoOBS import UBXtoOBS
 from UBXtoNAV import UBXtoNAV
 from UBXtoNAVOBS import UBXtoNAVOBS
+from gnssvod_oneSite import RNXtoIMG
 from aws_updown import aws_download, aws_upload
 from gif_maker import makeGIF
 from concatData import concatFilelistOBS, concatFilelistNAV, concatFilelistOBSNAV
@@ -27,15 +28,8 @@ def makeOutputDirs(masterOutputPath):
     os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/hemi", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/scatter", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/gif_imgs", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/gif_imgs/hemi", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/gif_imgs/scatter", exist_ok=True)
 
     os.makedirs(f"{masterOutputPath}/GIF_SUCCESS", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/gifs", exist_ok=True)
-    os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/palettes", exist_ok=True)
 
 def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=None):
     i = 1
@@ -45,28 +39,15 @@ def collectRINEXdata(waitTime=60, epochInterval=10, siteno=1, mode=1, comport=No
         case 1:
             os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/obs", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/azielev", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/obs", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/azielev", exist_ok=True)
 
         case 2:
             os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/nav", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/concat", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
 
         case 3:
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/obs", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/nav", exist_ok=True)
             os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/azielev", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
-            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
-
 
     try:
         while not quit:
@@ -117,10 +98,11 @@ while True:
     print("What would you like to do?")
     print("\t1) Collect RINEX Data")
     print("\t2) Combine RINEX files")
-    print("\t3) Create GIF from RINEX files")
-    print('\t4) Set output path ("." by default)')
-    print("\t5) AWS Download/Upload")
-    print("\t6) Clear Files")
+    print("\t3) Create PNG from RINEX file")
+    print("\t4) Create GIF from RINEX files")
+    print('\t5) Set output path ("." by default)')
+    print("\t6) AWS Download/Upload")
+    print("\t7) Clear Files")
     print("\t0) Quit")
     print()
     print("\t\t- ", end="")
@@ -285,14 +267,23 @@ while True:
                 match whichDir:
                     case 1:
                         inDir = "OBS_SUCCESS"
+                        os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat", exist_ok=True)
+                        os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
+                        os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
                         concatFilelistOBS(inDir, siteno, masterOutputPath)
                         break
                     case 2:
                         inDir = "NAV_SUCCESS"
+                        os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/concat", exist_ok=True)
+                        os.makedirs(f"{masterOutputPath}/NAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
                         concatFilelistNAV(inDir, siteno, masterOutputPath)
                         break
                     case 3:
                         inDir = "OBSNAV_SUCCESS"
+                        os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat", exist_ok=True)
+                        os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/obs", exist_ok=True)
+                        os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
+                        os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
                         concatFilelistOBSNAV(inDir, siteno, masterOutputPath)
                         break
                     case 0:
@@ -303,16 +294,214 @@ while True:
                         continue
 
         case 3:
+            graphDirs = ["OBS_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS"]
+            inDir = ""
+
+            while True:
+                whichDir = "invalid"
+                validOpts = set()
+                validOpts.add(0)
+                while whichDir == "invalid":
+                    print("Graph which directory?")
+                    i = 1
+                    for dir in graphDirs:
+                        howManyFiles = 0
+                        for _, _, files in os.walk(f"{masterOutputPath}/{dir}"):
+                            howManyFiles += len(files) 
+                        print(f"{i}) {dir} - {howManyFiles} files")
+                        validOpts.add(i)
+                        i += 1
+                    print("0) Back")
+                    print("\t- ", end="")
+                    whichDir = input()
+                    try:
+                        whichDir = int(whichDir)
+                    except:
+                        print("Invalid input. Try again.")
+                        print()
+                        continue
+                    if whichDir not in validOpts:
+                        print("Invalid input. Try again.")
+                        print()
+                        continue
+                    print()
+                if whichDir == 0:
+                    break
+
+                match whichDir:
+                    case 1:
+                        inDir = "OBS_SUCCESS"
+                    case 2:
+                        inDir = "NAV_SUCCESS"
+                    case 3:
+                        inDir = "OBSNAV_SUCCESS"
+
+                siteno = "invalid"
+                validOpts = set()
+                validOpts.add(0)
+                while siteno == "invalid":
+                    print("Which site?")
+                    i = 1
+                    for siteDir in os.listdir(f"{masterOutputPath}/{inDir}"):
+                        if siteDir != ".gitkeep":
+                            print(f"{siteDir[4:]}) {siteDir}")
+                            validOpts.add(int(siteDir[4:]))
+                        i += 1
+                    print("0) Back")
+                    print("\t- ", end="")
+                    siteno = input()
+                    try:
+                        siteno = int(siteno)
+                    except:
+                        print("Invalid input. Try again.")
+                        print()
+                        siteno = "invalid"
+                    if siteno not in validOpts:
+                        print("Invalid input. Try again.")
+                        print()
+                        siteno = "invalid"
+                    print()
+                if siteno == 0:
+                    break
+
+                whichFile = "invalid"
+                validOpts = set()
+                validOpts.add(0)
+                concatFiles = os.listdir(f"{masterOutputPath}/{inDir}/{siteDir}/concat/obs")
+                while whichFile =="invalid":
+                    if len(concatFiles) > 0:
+                        print("Graph which file?")
+                        for i in range(len(concatFiles)):
+                            if concatFiles[i].endswith(".rnx"):
+                                print(f"{i+1}) {concatFiles[i]}")
+                                validOpts.add(i+1)
+                            print("0) Back")
+                            print("\t- ", end="")
+                            whichFile = input()
+                            try:
+                                whichFile = int(whichFile)
+                            except:
+                                print("Invalid input. Try again.")
+                                print()
+                                whichFile = "invalid"
+                            if whichFile not in validOpts:
+                                print("Invalid input. Try again.")
+                                print()
+                                whichFile = "invalid"
+                    else:
+                        print("No graphable files available! Combine files before graphing.")
+                        break
+                    print()
+                if whichFile == 0:
+                    break
+                
+                os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/hemi", exist_ok=True)
+                os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/scatter", exist_ok=True)
+                os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs", exist_ok=True)
+                os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/hemi", exist_ok=True)
+                os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/scatter", exist_ok=True)
+                RNXtoIMG(f"{masterOutputPath}/{inDir}/site{siteno}/concat/obs/{concatFiles[whichFile-1]}", siteno, masterOutputPath)
+                print()
+
+        case 4:
             print("GIF conversion may take a while and use a good amount of RAM. Are you sure? y/n")
             print("\t- ", end="")
             contYes = input()
             if contYes in validYes:
-                makeGIF(masterOutputPath)
+                print()
+                graphDirs = ["OBS_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS"]
+                inDir = ""
+
+                while True:
+                    whichDir = "invalid"
+                    validOpts = set()
+                    validOpts.add(0)
+                    while whichDir == "invalid":
+                        print("Make GIF from files in which directory?")
+                        i = 1
+                        for dir in graphDirs:
+                            if dir == "NAV_SUCCESS":
+                                i += 1
+                            else:
+                                howManyFiles = 0
+                                for _, _, files in os.walk(f"{masterOutputPath}/{dir}"):
+                                    howManyFiles += len(files) 
+                                print(f"{i}) {dir} - {howManyFiles} files")
+                                validOpts.add(i)
+                                i += 1
+                        print("0) Back")
+                        print("\t- ", end="")
+                        whichDir = input()
+                        try:
+                            whichDir = int(whichDir)
+                        except:
+                            print("Invalid input. Try again.")
+                            print()
+                            continue
+                        if whichDir not in validOpts:
+                            print("Invalid input. Try again.")
+                            print()
+                            continue
+                        print()
+                    if whichDir == 0:
+                        break
+
+                    match whichDir:
+                        case 1:
+                            inDir = "OBS_SUCCESS"
+                        case 3:
+                            inDir = "OBSNAV_SUCCESS"
+
+                    siteno = "invalid"
+                    validOpts = set()
+                    validOpts.add(0)
+                    while siteno == "invalid":
+                        print("Which site?")
+                        i = 1
+                        for siteDir in os.listdir(f"{masterOutputPath}/{inDir}"):
+                            if siteDir != ".gitkeep":
+                                print(f"{siteDir[4:]}) {siteDir}")
+                                validOpts.add(int(siteDir[4:]))
+                            i += 1
+                        print("0) Back")
+                        print("\t- ", end="")
+                        siteno = input()
+                        try:
+                            siteno = int(siteno)
+                        except:
+                            print("Invalid input. Try again.")
+                            print()
+                            siteno = "invalid"
+                        if siteno not in validOpts:
+                            print("Invalid input. Try again.")
+                            print()
+                            siteno = "invalid"
+                        print()
+                    if siteno == 0:
+                        break
+
+                    match whichDir:
+                        case 1:
+                            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data", exist_ok=True)
+                            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/obs", exist_ok=True)
+                            os.makedirs(f"{masterOutputPath}/OBS_SUCCESS/site{siteno}/concat/gif_data/azielev", exist_ok=True)
+                        case 3:
+                            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/gif_data", exist_ok=True)
+                            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/gif_data/obs", exist_ok=True)
+                            os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/gif_data/azielev", exist_ok=True)
+
+                    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}", exist_ok=True)
+                    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs", exist_ok=True)
+                    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/scatter", exist_ok=True)
+                    os.makedirs(f"{masterOutputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/hemi", exist_ok=True)
+                    os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/site{siteno}/gifs", exist_ok=True)
+                    os.makedirs(f"{masterOutputPath}/GIF_SUCCESS/site{siteno}/palettes", exist_ok=True)
+                    makeGIF(siteno, inDir, masterOutputPath)
             else:
                 print()
                 continue
 
-        case 4:
+        case 5:
             while True:
                 print(f"Current output path: {masterOutputPath}")
                 print("Change directory? y/n")
@@ -339,7 +528,7 @@ while True:
                     makeOutputDirs(masterOutputPath)
                     break
 
-        case 5:
+        case 6:
             while True:
                 print(f"Current AWS bucket: {bucketName}")
                 print("Set new bucket name? y/n")
@@ -396,7 +585,7 @@ while True:
                         print()
                         continue
 
-        case 6:
+        case 7:
             while opt2 != 0:
                 show = False
                 print("Clear files from which directories?")

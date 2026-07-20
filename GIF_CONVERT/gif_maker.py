@@ -2,16 +2,21 @@ import os
 import sys
 import subprocess
 from datetime import datetime
-#import glob
 sys.path.insert(1, 'CONCAT_FILES')
 from concatData_gif import concatFilelist
 
 def getFilelist(imgfiledir: str):
     fileset = dict()
-    for filename in os.listdir(imgfiledir):
-        if filename != ".gitkeep":
-            filenameEpochRange = filename.split(".")[0][-39:].split("-")
-            lastDatetime = datetime.strptime(filenameEpochRange[1], "%Y_%m_%d_%H_%M_%S")
+    for filepath in os.listdir(imgfiledir):
+        if filepath != ".gitkeep":
+            print(filepath)
+            filenameSplit = filepath.split(".")
+            print(filenameSplit)
+            filename = filenameSplit[0]
+            print(filename)
+            filenameEpochRange = "_".join(filename.split("_")[2:])
+            print(filenameEpochRange)
+            lastDatetime = datetime.strptime(filenameEpochRange.split("-")[1], "%Y_%m_%d_%H_%M_%S")
             fileset[lastDatetime] = filename.split(".")[0]
     
     sortedFileset = []
@@ -20,10 +25,10 @@ def getFilelist(imgfiledir: str):
 
     return sortedFileset
 
-def makeGIF(outputPath="."):
+def makeGIF(siteno, dir, outputPath="."):
     # Scale scatter plots for GIF conversion
-    concatFilelist(f"{outputPath}/OBS_SUCCESS/rinex", f"{outputPath}/OBS_SUCCESS/azielev", outputPath)
-    scatterFilepath = f"{outputPath}/IMAGE_SUCCESS/gif_imgs/scatter"
+    concatFilelist(siteno, f"{outputPath}/{dir}/site{siteno}", outputPath)
+    scatterFilepath = f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/scatter"
     fileset = getFilelist(scatterFilepath)
 
     print("Scaling scatter plot images")
@@ -41,7 +46,7 @@ def makeGIF(outputPath="."):
         subprocess.run(renameCMD)
 
     # Scale hemi plots for GIF conversion
-    hemiFilepath = f"{outputPath}/IMAGE_SUCCESS/gif_imgs/hemi"
+    hemiFilepath = f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/hemi"
     fileset = getFilelist(hemiFilepath)
 
     print("Scaling hemi plot images")
@@ -59,10 +64,10 @@ def makeGIF(outputPath="."):
         subprocess.run(delCMD)
         subprocess.run(renameCMD)
 
-    scatterPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{scatterFilepath}/plot_oneSite_success_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_scatter.png -y'
-    hemiPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{hemiFilepath}/plot_oneSite_hemi_success_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_hemi.png -y'
-    scatterGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{scatterFilepath}/plot_oneSite_success_*.png" -i {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_scatter.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/gifs/plot_oneSite_scatter.gif -y'
-    hemiGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{hemiFilepath}/plot_oneSite_hemi_success_*.png" -i {outputPath}/GIF_SUCCESS/palettes/palette_oneSite_hemi.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/gifs/plot_oneSite_hemi.gif -y'
+    scatterPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{scatterFilepath}/plot_oneSite_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/site{siteno}/palettes/palette_oneSite_scatter.png -y'
+    hemiPaletteCMD = f'ffmpeg -hide_banner -loglevel error -pattern_type glob -i "{hemiFilepath}/plot_oneSite_hemi_*.png" -vf palettegen {outputPath}/GIF_SUCCESS/site{siteno}/palettes/palette_oneSite_hemi.png -y'
+    scatterGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{scatterFilepath}/plot_oneSite_*.png" -i {outputPath}/GIF_SUCCESS/site{siteno}/palettes/palette_oneSite_scatter.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/site{siteno}/gifs/plot_oneSite_scatter.gif -y'
+    hemiGIFCMD = f'ffmpeg -hide_banner -loglevel error -framerate 8 -pattern_type glob -i "{hemiFilepath}/plot_oneSite_hemi_*.png" -i {outputPath}/GIF_SUCCESS/site{siteno}/palettes/palette_oneSite_hemi.png -filter_complex paletteuse {outputPath}/GIF_SUCCESS/site{siteno}/gifs/plot_oneSite_hemi.gif -y'
 
     print("Creating scatter plot palette")
     subprocess.run(scatterPaletteCMD, shell=True)
@@ -74,3 +79,4 @@ def makeGIF(outputPath="."):
     subprocess.run(hemiGIFCMD, shell=True)
 
     print("Program complete! GIFs made.")
+    print()
