@@ -1,6 +1,6 @@
 from pyubx2 import UBXReader, UBXMessage, SET_LAYER_RAM, SET_LAYER_BBR
 from pygnssutils.rinex_conv import RinexConverter
-from pygnssutils.rinex_globals import OBS, NAV, EPOCHMIN
+from pygnssutils.rinex_globals import OBS, NAV, EPOCHMIN, GPS, GAL, QZS
 from serial import Serial
 import time
 import os
@@ -12,7 +12,7 @@ def mkconv():
         app=None,
         rinex_version="3.05",
         rinex_types=["O","N"],
-        gnssfilter=[""],
+        gnssfilter=[GPS, GAL, QZS],
         obsfilter=[""],
         timecorr=True,
         ionocorr=True,
