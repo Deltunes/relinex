@@ -6,7 +6,7 @@ azielevData = open("azielev.txt", "w", encoding="utf-8")
 azielevData.write("")
 azielevData.close()
 
-elevationData = open("sat_elevation_test3.csv", "r", encoding="utf-8")
+elevationData = open("RTL_SDR_7-20-26_Test1.csv", "r", encoding="utf-8")
 elevationLines = elevationData.readlines()
 elevationData.close()
 

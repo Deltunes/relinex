@@ -80,6 +80,7 @@ def concatFilelistOBS(fileDir: str, siteno: int, outputPath="."):
     cmdstr.append(f"{outputFilepath}/obs/obs_site{siteno}_{epochFirstAll}-{epochLastAll}.rnx")
     cmdstr.append("-f")
     subprocess.run(cmdstr)
+    #subprocess.run(cmdstr, capture_output=True)
 
     # AZIMUTH & ELEVATION CONCAT
     azielevConcat = open(f"{outputFilepath}/azielev/azielev_site{siteno}_{epochFirstAll}-{epochLastAll}.txt", "w", encoding="utf-8")
@@ -162,6 +163,7 @@ def concatFilelistNAV(fileDir: str, siteno: int, outputPath="."):
     cmdstr.append(f"{outputFilepath}/nav/nav_site{siteno}_{epochFirstAll}-{epochLastAll}.rnx")
     cmdstr.append("-f")
     subprocess.run(cmdstr)
+    #subprocess.run(cmdstr, capture_output=True)
 
 def concatFilelistOBSNAV(fileDir: str, siteno: int, outputPath="."):
     outputFilepath = f"{outputPath}/{fileDir}/site{siteno}/concat"
@@ -247,6 +249,7 @@ def concatFilelistOBSNAV(fileDir: str, siteno: int, outputPath="."):
     cmdstr.append(f"{outputFilepath}/obs/obs_site{siteno}_{epochFirstAll}-{epochLastAll}.rnx")
     cmdstr.append("-f")
     subprocess.run(cmdstr)
+    #subprocess.run(cmdstr, capture_output=True)
 
     cmdstr = []
     cmdstr.append("./CONCAT_FILES/gfzrnx")
@@ -276,6 +279,7 @@ def concatFilelistOBSNAV(fileDir: str, siteno: int, outputPath="."):
     cmdstr.append(f"{outputFilepath}/nav/nav_site{siteno}_{epochFirstAll}-{epochLastAll}.rnx")
     cmdstr.append("-f")
     subprocess.run(cmdstr)
+    #subprocess.run(cmdstr, capture_output=True)
 
     # AZIMUTH & ELEVATION CONCAT
     azielevConcat = open(f"{outputFilepath}/azielev/azielev_site{siteno}_{epochFirstAll}-{epochLastAll}.txt", "w", encoding="utf-8")

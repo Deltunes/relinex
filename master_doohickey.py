@@ -367,7 +367,7 @@ while True:
                 whichFile = "invalid"
                 validOpts = set()
                 validOpts.add(0)
-                concatFiles = os.listdir(f"{masterOutputPath}/{inDir}/{siteDir}/concat/obs")
+                concatFiles = os.listdir(f"{masterOutputPath}/{inDir}/site{siteno}/concat/obs")
                 while whichFile =="invalid":
                     if len(concatFiles) > 0:
                         print("Graph which file?")

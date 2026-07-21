@@ -384,6 +384,8 @@ def read_obsFile_v3(obsFileName,header):
     if obsFileName.endswith("crx"): obsFileName = obsFileName.split(".")[0] + ".rnx"
     f = open(obsFileName, errors = 'ignore') # open file
     obsLines = f.readlines() # read lines
+    #for line in obsLines:
+    #    print(line)
     # =============================================================================
 
     line = 0

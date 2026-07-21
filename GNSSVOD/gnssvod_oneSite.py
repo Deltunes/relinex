@@ -41,8 +41,8 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 	plt.title(obsEpochRange)
 	plt.colorbar(hs, ax=ax, location='bottom', shrink=0.5, pad=0.05)
 	
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/plot_oneSite.png",bbox_inches='tight')
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/scatter/plot_oneSite_{obsEpochRange}.png",bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/plot_oneSite.png",bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/scatter/plot_oneSite_{obsEpochRange}.png",bbox_inches='tight')
 	plt.close(fig)
 
 	hemi = gv.hemibuild(4)
@@ -74,6 +74,6 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 	ax.set_title(obsEpochRange)
 	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05)
 
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/hemi/plot_oneSite_hemi_{obsEpochRange}.png",facecolor='white',transparent=False,bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
+	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/hemi/plot_oneSite_hemi_{obsEpochRange}.png",facecolor='white',transparent=False,bbox_inches='tight')
 	plt.close(fig)
