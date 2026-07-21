@@ -375,19 +375,19 @@ while True:
                             if concatFiles[i].endswith(".rnx"):
                                 print(f"{i+1}) {concatFiles[i]}")
                                 validOpts.add(i+1)
-                            print("0) Back")
-                            print("\t- ", end="")
-                            whichFile = input()
-                            try:
-                                whichFile = int(whichFile)
-                            except:
-                                print("Invalid input. Try again.")
-                                print()
-                                whichFile = "invalid"
-                            if whichFile not in validOpts:
-                                print("Invalid input. Try again.")
-                                print()
-                                whichFile = "invalid"
+                        print("0) Back")
+                        print("\t- ", end="")
+                        whichFile = input()
+                        try:
+                            whichFile = int(whichFile)
+                        except:
+                            print("Invalid input. Try again.")
+                            print()
+                            whichFile = "invalid"
+                        if whichFile not in validOpts:
+                            print("Invalid input. Try again.")
+                            print()
+                            whichFile = "invalid"
                     else:
                         print("No graphable files available! Combine files before graphing.")
                         break

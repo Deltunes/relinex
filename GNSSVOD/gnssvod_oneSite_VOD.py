@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 
 def RNXtoIMG(obsFilepath, siteno, outputPath="."):
-	print(obsFilepath)
-	print(siteno)
-	print(outputPath)
 	# Get name of file, no format
 	obsFilename = obsFilepath.split("/")[-1].split(".")[0]
 	obsEpochRange = "_".join(obsFilename.split("_")[2:])
@@ -24,30 +21,6 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 	ds = xr.open_mfdataset(f"GNSSVOD/nc/{obsFilename}.nc",combine='nested',concat_dim='Epoch',join='outer')
 	df = ds.to_dataframe().dropna(how='all').sort_index()
 
-	# Plotting netCDF data
-	# ALL SATELLITES, ONE SITE
-	print("Plotting Data")
-	
-	# initialize figure with polar axes
-	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
-
-	# polar plots need a radius and theta direction in radians
-	radius = 90-df.Elevation
-	theta = np.deg2rad(df.Azimuth)
-		
-	# plot each measurement and color by signal to noise ratio
-	for j in df.columns.tolist():
-		if j[0] == 'S':
-			hs = ax.scatter(theta,radius,c=df[j])
-	ax.set_rlim([0,90])
-	ax.set_theta_zero_location("N")
-	plt.title(obsEpochRange)
-	plt.colorbar(hs, ax=ax, location='bottom', shrink=0.5, pad=0.05)
-	
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/plot_oneSite.png",bbox_inches='tight')
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/scatter/plot_oneSite_{obsEpochRange}.png",bbox_inches='tight')
-	plt.close(fig)
-
 	hemi = gv.hemibuild(4)
 	patches = hemi.patches()
 
@@ -56,10 +29,20 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 		if k[0] == 'S':
 			Sfreq.append(k)
 	df['SNR_mean'] = df[Sfreq].mean(axis=1)
-
 	newdf = hemi.add_CellID(df)
-
 	hemi_average = newdf.groupby('CellID').mean()
+
+	print(hemi_average)
+	#hemi_average.to_csv("out.csv")
+
+	#voddf = pd.DataFrame()
+	#voddf = pd.concat([voddf, hemi_average['CellID']], axis=1)
+	#voddf = pd.concat([voddf, hemi_average['Azimuth']], axis=1)
+	#voddf = pd.concat([voddf, hemi_average['Elevation']], axis=1)
+	#voddf = pd.concat([voddf, hemi_average['SNR_mean']], axis=1)
+	voddf = hemi_average[['Azimuth', 'Elevation', 'SNR_mean']].reset_index()
+
+	print(voddf)
 
 	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
 
@@ -80,3 +63,5 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
 	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/hemi/plot_oneSite_hemi_{obsEpochRange}.png",facecolor='white',transparent=False,bbox_inches='tight')
 	plt.close(fig)
+
+RNXtoIMG("/home/deltunes/out_leaflink/OBSNAV_SUCCESS/site11/concat/obs/obs_site11_2026_07_20_23_19_50-2026_07_21_12_52_30.rnx", 11, "/home/deltunes/out_leaflink")

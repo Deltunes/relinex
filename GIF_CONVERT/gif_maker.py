@@ -9,13 +9,9 @@ def getFilelist(imgfiledir: str):
     fileset = dict()
     for filepath in os.listdir(imgfiledir):
         if filepath != ".gitkeep":
-            print(filepath)
             filenameSplit = filepath.split(".")
-            print(filenameSplit)
             filename = filenameSplit[0]
-            print(filename)
             filenameEpochRange = "_".join(filename.split("_")[2:])
-            print(filenameEpochRange)
             lastDatetime = datetime.strptime(filenameEpochRange.split("-")[1], "%Y_%m_%d_%H_%M_%S")
             fileset[lastDatetime] = filename.split(".")[0]
     
@@ -28,7 +24,7 @@ def getFilelist(imgfiledir: str):
 def makeGIF(siteno, dir, outputPath="."):
     # Scale scatter plots for GIF conversion
     concatFilelist(siteno, f"{outputPath}/{dir}/site{siteno}", outputPath)
-    scatterFilepath = f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/scatter"
+    scatterFilepath = f"{outputPath}/IMAGE_SUCCESS/site{siteno}/scatter"
     fileset = getFilelist(scatterFilepath)
 
     print("Scaling scatter plot images")
@@ -46,7 +42,7 @@ def makeGIF(siteno, dir, outputPath="."):
         subprocess.run(renameCMD)
 
     # Scale hemi plots for GIF conversion
-    hemiFilepath = f"{outputPath}/IMAGE_SUCCESS/site{siteno}/gif_imgs/hemi"
+    hemiFilepath = f"{outputPath}/IMAGE_SUCCESS/site{siteno}/hemi"
     fileset = getFilelist(hemiFilepath)
 
     print("Scaling hemi plot images")

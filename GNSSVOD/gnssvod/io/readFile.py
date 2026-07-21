@@ -524,6 +524,7 @@ def read_obsFile_v3(obsFileName,header):
             else:
                 break
         # =============================================================================
+        #print(obsLines[currentline])
         if obsLines[currentline][0] == ">":
             epochLine = obsLines[currentline][1:].split()
             if len(epochLine) == 8:
