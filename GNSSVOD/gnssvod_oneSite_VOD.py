@@ -1,67 +1,71 @@
 import gnssvod as gv
 import pandas as pd
-import xarray as xr
-import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from matplotlib.collections import PatchCollection
+import os
 
-def RNXtoIMG(obsFilepath, siteno, outputPath="."):
-	# Get name of file, no format
-	obsFilename = obsFilepath.split("/")[-1].split(".")[0]
-	obsEpochRange = "_".join(obsFilename.split("_")[2:])
+def plot_vod_hemisphere(vod, fig_dir, vod_col="VOD1"):
+    os.makedirs(f"{fig_dir}/hemi", exist_ok=True)
 
-	# Preprocess RINEX data to netCDF file
-	pattern = {'obsfile1':f'{obsFilepath}'}
-	outputdir = {'obsfile1':f'GNSSVOD/nc/'}
-	keepvars = ['S?','S??']
-	gv.preprocess(pattern, interval='1s', keepvars=keepvars, outputdir=outputdir, overwrite=True)
+    hemi = gv.hemibuild(4)
+    patches = hemi.patches()
 
-	# Open and sort netCDF file
-	print("Opening nc dataset")
-	ds = xr.open_mfdataset(f"GNSSVOD/nc/{obsFilename}.nc",combine='nested',concat_dim='Epoch',join='outer')
-	df = ds.to_dataframe().dropna(how='all').sort_index()
+    v = hemi.add_CellID(vod).drop(columns=["Azimuth", "Elevation"])
+    v_avg = v.groupby("CellID").mean(numeric_only=True)
 
-	hemi = gv.hemibuild(4)
-	patches = hemi.patches()
+    fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(projection="polar"))
 
-	Sfreq = []
-	for k in df.columns.tolist():
-		if k[0] == 'S':
-			Sfreq.append(k)
-	df['SNR_mean'] = df[Sfreq].mean(axis=1)
-	newdf = hemi.add_CellID(df)
-	hemi_average = newdf.groupby('CellID').mean()
+    ipatches = pd.concat([patches, v_avg[vod_col]], join="inner", axis=1)
+    pc = PatchCollection(ipatches.Patches, array=ipatches[vod_col],
+                          edgecolor="face", linewidth=1)
+    pc.set_clim([-0.1, 3])
+    ax.add_collection(pc)
+    ax.set_rlim([0, 90])
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    ax.set_title(f"{vod_col} hemispheric average")
+    plt.colorbar(pc, ax=ax, location="bottom", shrink=0.5, pad=0.05)
 
-	print(hemi_average)
-	#hemi_average.to_csv("out.csv")
+    plt.savefig(f"{fig_dir}/plot_hemi_{vod_col}.png",
+                facecolor="white", transparent=False, bbox_inches="tight")
+    plt.close(fig)
 
-	#voddf = pd.DataFrame()
-	#voddf = pd.concat([voddf, hemi_average['CellID']], axis=1)
-	#voddf = pd.concat([voddf, hemi_average['Azimuth']], axis=1)
-	#voddf = pd.concat([voddf, hemi_average['Elevation']], axis=1)
-	#voddf = pd.concat([voddf, hemi_average['SNR_mean']], axis=1)
-	voddf = hemi_average[['Azimuth', 'Elevation', 'SNR_mean']].reset_index()
+ref_rnx = "/home/deltunes/out_leaflink/OBSNAV_SUCCESS/site11/concat/obs/obs_site11_2026_07_20_23_19_50-2026_07_21_12_52_30.rnx"
+subcanopy_rnx = "/home/deltunes/out_leaflink/OBSNAV_SUCCESS/site12/concat/obs/obs_site12_2026_07_20_23_19_50-2026_07_21_14_26_30.rnx"
+outputPath="/home/deltunes/out_leaflink"
 
-	print(voddf)
+site_key = f"site11"
+ref_key = f"{site_key}_ref"
+grn_key = f"{site_key}_grn"
 
-	fig, ax = plt.subplots(figsize=(7,7),subplot_kw=dict(projection='polar'))
+ref_nc_dir = f"GNSSVOD/nc/{ref_key}/"
+grn_nc_dir = f"GNSSVOD/nc/{grn_key}/"
+paired_dir = f"GNSSVOD/paired/"
+fig_dir = f"{outputPath}/IMAGE_SUCCESS/{site_key}"
 
-	# associate the mean values to the patches, join inner will drop patches with no data, making plotting slightly faster
-	ipatches = pd.concat([patches,hemi_average],join='inner',axis=1)
+# 1) Preprocess both RINEX files -> netCDF (adds Azimuth/Elevation)
+pattern = {ref_key: ref_rnx, grn_key: subcanopy_rnx}
+outputdir = {ref_key: ref_nc_dir, grn_key: grn_nc_dir}
+keepvars = ["S?", "S??"]  # only keep SNR columns, no need for pseudorange/carrier phase
 
-	# plotting with colored patches
-	pc = PatchCollection(ipatches.Patches,array=ipatches['SNR_mean'],edgecolor='face',linewidth=1)
-	
-	pc.set_clim([25,50])
-	ax.add_collection(pc)
-	
-	ax.set_rlim([0,90])
-	ax.set_theta_zero_location("N")
-	ax.set_title(obsEpochRange)
-	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05)
+gv.preprocess(pattern, interval="1s", keepvars=keepvars, outputdir=outputdir)
 
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/plot_oneSite_hemi.png",facecolor='white',transparent=False,bbox_inches='tight')
-	plt.savefig(f"{outputPath}/IMAGE_SUCCESS/site{siteno}/hemi/plot_oneSite_hemi_{obsEpochRange}.png",facecolor='white',transparent=False,bbox_inches='tight')
-	plt.close(fig)
+# 2) Merge the two stations (align by Epoch + satellite) into one paired dataset covering the full time span of the data
+gather_pattern = {ref_key: f"{ref_nc_dir}*.nc", grn_key: f"{grn_nc_dir}*.nc"}
 
-RNXtoIMG("/home/deltunes/out_leaflink/OBSNAV_SUCCESS/site11/concat/obs/obs_site11_2026_07_20_23_19_50-2026_07_21_12_52_30.rnx", 11, "/home/deltunes/out_leaflink")
+startday = pd.Timestamp.now().normalize() - pd.Timedelta(days=2)
+timeintervals = pd.interval_range(start=startday, periods=1, freq="10D", closed="left")
+
+pairings = {site_key: (ref_key, grn_key)}
+
+gv.gather_stations(gather_pattern, pairings, timeintervals,
+                    outputdir={site_key: paired_dir})
+
+# 3) Calculate VOD from the paired data
+vod_pattern = f"{paired_dir}*.nc"
+bands = {"VOD1": ["S1", "S1X", "S1C"], "VOD7": ["S7", "S7X", "S7C"]}
+vod_all = gv.calc_vod(vod_pattern, pairings, bands)
+vod = vod_all[site_key]
+
+plot_vod_hemisphere(vod, fig_dir, vod_col="VOD1")

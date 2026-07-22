@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 
 def RNXtoIMG(obsFilepath, siteno, outputPath="."):
-	print(obsFilepath)
-	print(siteno)
-	print(outputPath)
 	# Get name of file, no format
 	obsFilename = obsFilepath.split("/")[-1].split(".")[0]
 	obsEpochRange = "_".join(obsFilename.split("_")[2:])
