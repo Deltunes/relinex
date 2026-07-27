@@ -15,8 +15,10 @@ OBS and NAV   - Generates both. (Recommended)
 
 Site number is the number that represents which site you are currently collecting from. It is used to distinguish collection periods and sources. It can be set to any integer, but I recommend formatting site numbers like this:
 
-\/ - Collection period 5
+\\/ - Collection period 5
+
  5 2
+ 
    /\ - Collection location
 
 So, this is the 5th time collecting data at the 2nd collection location. There are definitely better ways to format site number, but this is what I have used.
