@@ -2,7 +2,9 @@
 ### Tools for collecting and processing GNSS data from Sparkfun ZED-F9P chips
 **Recommended to run on Linux, has not been fully tested on other OS!**
 
-Once cloned, run "python3 master_doohickey.py" from the main directory to use.
+Once cloned, install all libraries in _MISC/setup.txt and configure AWS.
+
+After setup is complete, run "python3 master_prog.py" from the main directory to start using Relinex.
 
 ## Collect RINEX Data
 You will be prompted to set the COMPORT that the Sparkfun chip is connected to. It will be empty by default. The COMPORT will be consistent between executions.
@@ -37,7 +39,7 @@ You do not need to have a concatenated RINEX observation file to create a GIF. F
 ## AWS Download/Upload
 You will be prompted to set the name of the AWS S3 bucket that will be uploaded to/downloaded from. It will be empty by default. The bucket name will be consistent between executions.
 
-You must configure AWS on your device for your account before relinex can upload from/download to the output directory.
+You must configure AWS on your device for your account before Relinex can upload from/download to the output directory.
 1) On the AWS website, https://(region).console.aws.amazon.com/console/home, search IAM and click the first option
 2) From the IAM page, click on "Manage access keys"
 3) Scroll down to "Access keys" and click "Create access key"
