@@ -19,7 +19,7 @@ Site number is the number that represents which site you are currently collectin
 
  5 2
  
-   /\ - Collection location
+     /\ - Collection location
 
 So, this is the 5th time collecting data at the 2nd collection location. There are definitely better ways to format site number, but this is what I have used.
 
