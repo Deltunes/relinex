@@ -1,5 +1,5 @@
 *.nc
-*.png
-*.gif
-*.rnx
+#*.png
+#*.gif
+#*.rnx
 *.pyc
