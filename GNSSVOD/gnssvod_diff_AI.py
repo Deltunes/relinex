@@ -1,0 +1,183 @@
+import gnssvod as gv
+import pandas as pd
+import xarray as xr
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+
+
+def load_nc_as_df(ncPath):
+	"""
+	Open a preprocessed gnssvod netCDF file and return a tidy dataframe with
+	Epoch, SV (satellite), Azimuth, Elevation, and SNR columns as plain columns
+	(not index levels), sorted by time.
+	"""
+	ds = xr.open_mfdataset(ncPath, combine='nested', concat_dim='Epoch', join='outer')
+	df = ds.to_dataframe().dropna(how='all')
+
+	# Bring index levels (Epoch, SV, etc.) out as columns so merge_asof/groupby are simple
+	df = df.reset_index()
+
+	# Compute a single SNR value per observation by averaging all S? / S?? columns present
+	Sfreq = [c for c in df.columns if c[0] == 'S' and c not in ('SV',)]
+	df['SNR_mean'] = df[Sfreq].mean(axis=1)
+
+	df = df.sort_values('Epoch')
+	return df
+
+
+def match_receivers(df_sdr, df_ublox, angle_tol_deg=0.1, time_tol_s=5.0):
+	"""
+	Match observations between two receivers (e.g. SDR and uBlox), satellite by
+	satellite, using nearest-in-time matching within time_tol_s, then dropping
+	any matched pairs whose azimuth/elevation differ by more than angle_tol_deg.
+
+	Returns a dataframe of matched pairs with columns:
+	  SV, Epoch_sdr, Epoch_ublox, dt_s,
+	  Azimuth_sdr, Elevation_sdr, Azimuth_ublox, Elevation_ublox,
+	  dAzimuth, dElevation,
+	  SNR_sdr, SNR_ublox, dSNR_dB   <-- this is a LOG-domain (dB) difference,
+	                                    i.e. it corresponds to a linear power RATIO,
+	                                    not a linear power difference.
+	"""
+	matched_chunks = []
+
+	common_sats = sorted(set(df_sdr['SV']).intersection(set(df_ublox['SV'])))
+	print(f"Found {len(common_sats)} satellites common to both receivers")
+
+	for sv in common_sats:
+		left = df_sdr[df_sdr['SV'] == sv].sort_values('Epoch').rename(columns={'Epoch': 'Epoch_sdr'})
+		right = df_ublox[df_ublox['SV'] == sv].sort_values('Epoch').rename(columns={'Epoch': 'Epoch_ublox'})
+
+		if left.empty or right.empty:
+			continue
+
+		# Nearest-in-time join, tolerance in seconds. Keep both timestamps (Epoch_sdr,
+		# Epoch_ublox) so we can compute an actual dt_s afterwards - merge_asof only
+		# keeps one shared key column otherwise, which would lose the offset info.
+		# NOTE: if the two receivers' clocks have a systematic offset (bias),
+		# this match will be consistently skewed in one direction. Check the
+		# distribution of dt_s below (plot_time_offset_diagnostic) to see if
+		# that's happening before trusting the angle-based results too much.
+		merged = pd.merge_asof(
+			left, right,
+			left_on='Epoch_sdr', right_on='Epoch_ublox',
+			direction='nearest',
+			tolerance=pd.Timedelta(seconds=time_tol_s),
+			suffixes=('_sdr', '_ublox')
+		)
+
+		merged = merged.dropna(subset=['Azimuth_ublox', 'Elevation_ublox'])
+		if merged.empty:
+			continue
+
+		merged['SV'] = sv
+		merged['dt_s'] = (merged['Epoch_sdr'] - merged['Epoch_ublox']).dt.total_seconds()
+		merged['dAzimuth'] = (merged['Azimuth_sdr'] - merged['Azimuth_ublox']).abs()
+		merged['dElevation'] = (merged['Elevation_sdr'] - merged['Elevation_ublox']).abs()
+
+		# Angular tolerance filter
+		merged = merged[(merged['dAzimuth'] <= angle_tol_deg) & (merged['dElevation'] <= angle_tol_deg)]
+		if merged.empty:
+			continue
+
+		matched_chunks.append(merged)
+
+	if not matched_chunks:
+		print("No matches found within given tolerances.")
+		return pd.DataFrame()
+
+	matched = pd.concat(matched_chunks, ignore_index=True)
+
+	# dB difference: since SNR_mean is already in dB-Hz, subtracting is a LOG-domain
+	# difference. This is equivalent to a ratio in linear power/voltage units, not
+	# a linear power difference. If you want the linear difference instead, convert
+	# each side first: linear = 10**(SNR_dB/10), subtract, then optionally convert back.
+	matched['dSNR_dB'] = matched['SNR_mean_sdr'] - matched['SNR_mean_ublox']
+
+	print(f"Matched {len(matched)} observation pairs across {matched['SV'].nunique()} satellites")
+	return matched
+
+def plot_difference_scatter(matched, outputPath=".", label="", vlim=15):
+	"""
+	Polar scatter of dSNR_dB (SDR - uBlox), positioned using the SDR's
+	azimuth/elevation. Uses a diverging colormap centered at zero so
+	"no difference" reads as neutral.
+	"""
+	fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(projection='polar'))
+
+	radius = 90 - matched['Elevation_sdr']
+	theta = np.deg2rad(matched['Azimuth_sdr'])
+
+	hs = ax.scatter(theta, radius, c=matched['dSNR_dB'], cmap='PuOr', vmin=-vlim, vmax=vlim)
+	ax.set_rlim([0, 90])
+	ax.set_theta_zero_location("N")
+	plt.title(f"Signal Strength Difference")
+	plt.colorbar(hs, ax=ax, location='bottom', shrink=0.5, pad=0.05)
+
+	plt.savefig(f"{outputPath}/plot_difference_scatter_{label}.png", bbox_inches='tight')
+	plt.close(fig)
+
+
+def plot_difference_hemi(matched, outputPath=".", label="", vlim=15):
+	"""
+	Hemisphere-binned average of dSNR_dB, same binning scheme as your
+	existing plot_oneSite_hemi plots, so it's directly comparable.
+	"""
+	hemi = gv.hemibuild(4)
+	patches = hemi.patches()
+
+	# hemi.add_CellID expects Azimuth/Elevation columns; use the SDR's angles
+	# as the reference position for each matched pair.
+	tmp = matched.rename(columns={'Azimuth_sdr': 'Azimuth', 'Elevation_sdr': 'Elevation'})
+	tmp = hemi.add_CellID(tmp)
+
+	hemi_average = tmp.groupby('CellID').mean(numeric_only=True)
+
+	fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(projection='polar'))
+	ipatches = pd.concat([patches, hemi_average], join='inner', axis=1)
+
+	pc = PatchCollection(ipatches.Patches, array=ipatches['dSNR_dB'], cmap='PuOr', edgecolor='face', linewidth=1)
+	pc.set_clim([-vlim, vlim])
+	ax.add_collection(pc)
+
+	ax.set_rlim([0, 90])
+	ax.set_theta_zero_location("N")
+	ax.set_title(f"Signal Strength Difference")
+	plt.colorbar(pc, ax=ax, location='bottom', shrink=0.5, pad=0.05)
+
+	plt.savefig(f"{outputPath}/plot_difference_hemi_{label}.png", facecolor='white', transparent=False, bbox_inches='tight')
+	plt.close(fig)
+
+
+def run_difference_analysis(sdr_ncPath, ublox_ncPath, outputPath=".", label="",
+							 angle_tol_deg=0.1, time_tol_s=5.0, vlim=15):
+	"""
+	End-to-end: load both receivers' netCDF files, match observations,
+	and produce diagnostic + difference plots.
+	"""
+	print("Loading SDR data")
+	df_sdr = load_nc_as_df(sdr_ncPath)
+	print("Loading uBlox data")
+	df_ublox = load_nc_as_df(ublox_ncPath)
+
+	matched = match_receivers(df_sdr, df_ublox, angle_tol_deg=angle_tol_deg, time_tol_s=time_tol_s)
+	if matched.empty:
+		return matched
+
+	plot_difference_scatter(matched, outputPath=outputPath, label=label, vlim=vlim)
+	plot_difference_hemi(matched, outputPath=outputPath, label=label, vlim=vlim)
+
+	return matched
+
+if __name__ == "__main__":
+	# Example usage - adjust paths to your preprocessed netCDF files
+	matched = run_difference_analysis(
+		sdr_ncPath="GNSSVOD/nc/obs_site53_2026_07_22_14_55_35-2026_07_22_20_25_19.nc",
+		ublox_ncPath="GNSSVOD/nc/obs_site52_2026_07_22_14_52_18-2026_07_22_20_17_14.nc",
+		outputPath="/home/deltunes/lflnk_diff",
+		label="example",
+		angle_tol_deg=0.1,
+		time_tol_s=5.0,
+		vlim=15,
+	)

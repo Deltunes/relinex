@@ -1,1 +1,1 @@
-/home/deltunes/out_leaflink
+/home/deltunes/leaflink/output

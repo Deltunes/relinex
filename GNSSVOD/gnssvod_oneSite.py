@@ -35,7 +35,7 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 	# plot each measurement and color by signal to noise ratio
 	for j in df.columns.tolist():
 		if j[0] == 'S':
-			hs = ax.scatter(theta,radius,c=df[j])
+			hs = ax.scatter(theta,radius,c=df[j],vmin=0,vmax=50)
 	ax.set_rlim([0,90])
 	ax.set_theta_zero_location("N")
 	plt.title(obsEpochRange)
@@ -66,7 +66,7 @@ def RNXtoIMG(obsFilepath, siteno, outputPath="."):
 	# plotting with colored patches
 	pc = PatchCollection(ipatches.Patches,array=ipatches['SNR_mean'],edgecolor='face',linewidth=1)
 	
-	pc.set_clim([25,50])
+	pc.set_clim([0,50])
 	ax.add_collection(pc)
 	
 	ax.set_rlim([0,90])
