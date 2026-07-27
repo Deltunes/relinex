@@ -215,9 +215,10 @@ while True:
         case 2:
             concatDirs = ["OBS_SUCCESS", "NAV_SUCCESS", "OBSNAV_SUCCESS"]
             inDir = ""
-            whichDir = -1
+            breaking = False
 
-            while whichDir != 0:
+            whichDir = "invalid"
+            while whichDir == "invalid":
                 print("Concatenate which directory?")
                 i = 1
                 for dir in concatDirs:
@@ -234,35 +235,49 @@ while True:
                 except:
                     print("Invalid input. Try again.")
                     print()
-                    continue
+                    whichDir = "invalid"
+                if whichDir == 0:
+                    breaking = True
+                    break
                 print()
 
-                match whichDir:
-                    case 1:
-                        inDir = "OBS_SUCCESS"
-                    case 2:
-                        inDir = "NAV_SUCCESS"
-                    case 3:
-                        inDir = "OBSNAV_SUCCESS"
+            if breaking == True:
+                print()
+                continue
 
-                siteno = "invalid"
-                while siteno == "invalid":
-                    print("Which site?")
-                    i = 1
-                    for siteDir in os.listdir(f"{masterOutputPath}/{inDir}"):
-                        if siteDir != ".gitkeep":
-                            print(f"{siteDir[4:]}) {siteDir}")
-                        i += 1
-                    print("0) Back")
-                    print("\t- ", end="")
-                    siteno = input()
-                    try:
-                        siteno = int(siteno)
-                    except:
-                        print("Invalid input. Try again.")
-                        print()
-                        siteno = "invalid"
+            match whichDir:
+                case 1:
+                    inDir = "OBS_SUCCESS"
+                case 2:
+                    inDir = "NAV_SUCCESS"
+                case 3:
+                    inDir = "OBSNAV_SUCCESS"
+
+            siteno = "invalid"
+            while siteno == "invalid":
+                print("Which site?")
+                i = 1
+                for siteDir in os.listdir(f"{masterOutputPath}/{inDir}"):
+                    if siteDir != ".gitkeep":
+                        print(f"{siteDir[4:]}) {siteDir}")
+                    i += 1
+                print("0) Back")
+                print("\t- ", end="")
+                siteno = input()
+                try:
+                    siteno = int(siteno)
+                except:
+                    print("Invalid input. Try again.")
                     print()
+                    siteno = "invalid"
+                if siteno == 0:
+                    breaking = True
+                    break
+                print()
+
+                if breaking == True:
+                    print()
+                    continue
 
                 match whichDir:
                     case 1:
@@ -285,8 +300,6 @@ while True:
                         os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/nav", exist_ok=True)
                         os.makedirs(f"{masterOutputPath}/OBSNAV_SUCCESS/site{siteno}/concat/azielev", exist_ok=True)
                         concatFilelistOBSNAV(inDir, siteno, masterOutputPath)
-                        break
-                    case 0:
                         break
                     case _:
                         print("Invalid input. Try again.")
