@@ -1,13 +1,13 @@
-import time
-from serial import Serial
 from pyubx2 import UBXReader, UBXMessage, SET_LAYER_RAM, SET_LAYER_BBR
 from pygnssutils.rinex_conv import RinexConverter
 from pygnssutils.rinex_globals import OBS, EPOCHMIN, GPS, GAL, QZS
-import sys
+from serial import Serial
+import time
 import os
 
 COMPORT = None
 
+# Rinex Converter construction
 def mkconv():
     return RinexConverter(
         app=None,
@@ -29,7 +29,7 @@ def mkconv():
         comments=[],
     )
 
-# Write Azimuth and Elevation to .txt file
+# Write Azimuth/Elevation data from inputs
 def writeazielev(conv, currEpoch, azielevFile, azielevDict):
     currEpoch = getEpoch(conv, currEpoch)
 
@@ -49,12 +49,13 @@ def writeazielev(conv, currEpoch, azielevFile, azielevDict):
         azielevFile.write("\n")
     return currEpoch
 
+# Adjust Azimuth/Elevation file
 def correctazielev(obsFilepath, azielevFilepath):
-    #   DATA RETRIEVAL FROM FILES
+    # DATA RETRIEVAL FROM FILES
     # Open RINEX file to read
-    rnxFile = open(obsFilepath, "r", encoding="utf-8")
-    rnxData = rnxFile.readlines()
-    rnxFile.close()
+    obsFile = open(obsFilepath, "r", encoding="utf-8")
+    obsData = obsFile.readlines()
+    obsFile.close()
 
     # Open Azimuth/Elevation file to read
     azielevFile = open(azielevFilepath, "r", encoding="utf-8")
@@ -62,15 +63,15 @@ def correctazielev(obsFilepath, azielevFilepath):
     azielevFile.close()
 
     # Increment past header until satellites
-    for line in range(len(rnxData)-1):
-        if rnxData[line][0] == ">":
-            rnxData = rnxData[line:]
+    for line in range(len(obsData)-1):
+        if obsData[line][0] == ">":
+            obsData = obsData[line:]
             break
 
     # Get satellite IDs
     currEpochLine = ""
     satIDs = {}
-    for line in rnxData:
+    for line in obsData:
         # If line is epoch
         if line[0] == ">":
             # Reformat epoch line to match azielev format
@@ -123,22 +124,27 @@ def formatOBS(obsFilepath):
     rplcRNX.write(rplcData)
     rplcRNX.close()
 
+# Rename observation, navigation, and azimuth/elevation files with epoch in filename
 def renameFilesWithEpoch(obsFilepath, azielevFilepath, firstEpoch, lastEpoch):
+    # Get epoch as string
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
 
-    rnxFileSplit = obsFilepath.split("/")
-    rnxFilename = rnxFileSplit[-1]
-    rnxFilePrefix = "_".join(rnxFilename.split("_")[:-1])
-    rnxFileSplit[-1] = f"{rnxFilePrefix}_{firstEpoch}-{lastEpoch}.rnx"
-    obsFilepathNew = "/".join(rnxFileSplit)
+    # Generate new observation filename
+    obsFileSplit = obsFilepath.split("/")
+    obsFilename = obsFileSplit[-1]
+    obsFilePrefix = "_".join(obsFilename.split("_")[:-1])
+    obsFileSplit[-1] = f"{obsFilePrefix}_{firstEpoch}-{lastEpoch}.rnx"
+    obsFilepathNew = "/".join(obsFileSplit)
 
+    # Generate new azimuth/elevation filename
     azielevFileSplit = azielevFilepath.split("/")
     azielevFilename = azielevFileSplit[-1]
     azielevFilePrefix = "_".join(azielevFilename.split("_")[:-1])
     azielevFileSplit[-1] = f"{azielevFilePrefix}_{firstEpoch}-{lastEpoch}.txt"
     azielevFilepathNew = "/".join(azielevFileSplit)
 
+    # Rename files with new filename
     os.rename(f"{obsFilepath}", f"{obsFilepathNew}")
     os.rename(f"{azielevFilepath}", f"{azielevFilepathNew}")
 
@@ -155,9 +161,11 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
     COMPORT = comport
     # Connect to Sparkfun chip through COMPORT
     try:
+        # Get UBXReader from COMPORT
         stream = Serial(COMPORT, 115200, timeout=10)
         ubr = UBXReader(stream)
 
+        # Format Sparkfun chip output messges
         cfg_data = [
             ("CFG_MSGOUT_UBX_RXM_RAWX_USB", 1),
             ("CFG_MSGOUT_UBX_RXM_SFRBX_USB", 1),
@@ -170,10 +178,11 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         quit = True
         return quit
         
-    print(f"RINEX FILE LENGTH: {waitTime} second(s)")
+    print(f"OBSERVATION FILE LENGTH: {waitTime} second(s)")
     print(f"EPOCH INTERVAL: {epochInterval} second(s)")
 
     try:
+        # Create new Rinex Converter
         conv = mkconv()
 
         print(f"RNX FILE: {fileno}")
@@ -255,6 +264,7 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
 
             conv._outputs[OBS]["prc"] += input_prc
 
+            # Get first epoch
             if firstEpoch == None or firstEpoch == EPOCHMIN:
                 firstEpoch = getEpoch(conv, currEpoch)
 
@@ -262,13 +272,16 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         conv.process_output_data(["O"])
         conv._outputs[OBS]["stm"].close()
 
+        # Get last epoch
         while lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)
 
+        # Format files and filenames
         formatOBS(obsFilepath)
         correctazielev(obsFilepath, azielevFilepath)
         renameFilesWithEpoch(obsFilepath, azielevFilepath, firstEpoch, lastEpoch) 
 
+        # Set quit to False to continue looping
         print()
         quit = False
         return quit
@@ -290,19 +303,7 @@ def UBXtoOBS(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         correctazielev(obsFilepath, azielevFilepath)
         renameFilesWithEpoch(obsFilepath, azielevFilepath, firstEpoch, lastEpoch)
 
+        # Return quit to stop loop
         print()
         quit = True
         return quit
-
-"""# Run UBXtoRNX, pass arguments
-if __name__ == "__main__":
-    i = 1
-    while True:
-        if len(sys.argv) > 2:
-            UBXtoOBS(i, int(sys.argv[1]),int(sys.argv[2]))
-        elif len(sys.argv) > 1:
-            UBXtoOBS(i, int(sys.argv[1]))
-        else:
-            UBXtoOBS(i)
-        i += 1
-"""

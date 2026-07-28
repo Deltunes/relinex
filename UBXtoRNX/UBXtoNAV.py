@@ -7,6 +7,7 @@ import os
 
 COMPORT = None
 
+# Rinex Converter construction
 def mkconv():
     return RinexConverter(
         app=None,
@@ -28,6 +29,7 @@ def mkconv():
         comments=[],
     )
 
+# Reformat RINEX file to work with GNSSVOD
 def formatNAV(navFilepath):
     # Reformat RINEX file to work with GNSSVODs
     navFile = open(navFilepath, "r", encoding="utf-8")
@@ -40,16 +42,20 @@ def formatNAV(navFilepath):
             navFile.write(line)
     navFile.close()
 
+# Rename observation, navigation, and azimuth/elevation files with epoch in filename
 def renameFilesWithEpoch(navFilepath, firstEpoch, lastEpoch):
+    # Get epoch as string
     firstEpoch = firstEpoch.strftime("%Y_%m_%d_%H_%M_%S")
     lastEpoch = lastEpoch.strftime("%Y_%m_%d_%H_%M_%S")
 
+    # Generate new navigation filename
     navFileSplit = navFilepath.split("/")
     navFilename = navFileSplit[-1]
     navFilePrefix = "_".join(navFilename.split("_")[:-1])
     navFileSplit[-1] = f"{navFilePrefix}_{firstEpoch}-{lastEpoch}.rnx"
     navFilepathNew = "/".join(navFileSplit)
 
+    # Rename files with new filename
     os.rename(f"{navFilepath}", f"{navFilepathNew}")
 
 def getEpoch(conv, currEpoch):
@@ -65,9 +71,11 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
     COMPORT = comport
     # Connect to Sparkfun chip through COMPORT
     try:
+        # Get UBXReader from COMPORT
         stream = Serial(COMPORT, 115200, timeout=10)
         ubr = UBXReader(stream)
-        
+
+        # Format Sparkfun chip output messges
         cfg_data = [
             ("CFG_MSGOUT_UBX_RXM_RAWX_USB", 1),
             ("CFG_MSGOUT_UBX_RXM_SFRBX_USB", 1),
@@ -84,6 +92,7 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
     print(f"EPOCH INTERVAL: {epochInterval} second(s)")
 
     try:
+        # Create new Rinex Converter
         conv = mkconv()
 
         print(f"RNX FILE: {fileno}")
@@ -133,6 +142,7 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
             
             conv._outputs[NAV]["prc"] += input_prc
 
+            # Get first epoch
             if firstEpoch == None or firstEpoch == EPOCHMIN:
                 firstEpoch = getEpoch(conv, currEpoch)
 
@@ -140,12 +150,15 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
         conv.process_output_data(["N"])
         conv._outputs[NAV]["stm"].close()
 
+        # Get last epoch
         while lastEpoch == None or lastEpoch == EPOCHMIN:
             lastEpoch = getEpoch(conv, currEpoch)
 
+        # Format files and filenames
         formatNAV(navFilepath)
         renameFilesWithEpoch(navFilepath, firstEpoch, lastEpoch)
 
+        # Set quit to False to continue looping
         print()
         quit = False
         return quit
@@ -157,22 +170,11 @@ def UBXtoNAV(fileno, siteno, waitTime=60, epochInterval=10, outputPath=".", comp
             conv.process_output_data(["N"])
             conv._outputs[NAV]["stm"].close()
             formatNAV(navFilepath)
-
         if lastEpoch == None:
             lastEpoch = getEpoch(conv, currEpoch)
         renameFilesWithEpoch(navFilepath, firstEpoch, lastEpoch)
 
+        # Return quit to stop loop
         print()
         quit = True
         return quit
-
-"""if __name__ == "__main__":
-    i = 1
-    while True:
-        if len(sys.argv) > 2:
-            UBXtoNAV(i, int(sys.argv[1]),int(sys.argv[2]))
-        elif len(sys.argv) > 1:
-            UBXtoNAV(i, int(sys.argv[1]))
-        else:
-            UBXtoNAV(i)
-        i += 1"""
