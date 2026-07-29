@@ -1,0 +1,3 @@
+[submodule "UBXtoRNX/pygnssutils"]
+	path = UBXtoRNX/pygnssutils
+	url = https://github.com/semuconsulting/pygnssutils.git
