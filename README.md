@@ -49,3 +49,6 @@ You must configure AWS on your device for your account before Relinex can upload
 
 
 ## Clear Files
+
+## Acknowledgments
+> This repository makes use of [GFZRNX](https://gnss.gfz.de/services/gfzrnx) which is available free-of-charge for non-routine scientific and educational purposes. When using GFZRNX please cite as: Nischan, Thomas (2016): GFZRNX - RINEX GNSS Data Conversion and Manipulation Toolbox. GFZ Data Services. [http://doi.org/10.5880/GFZ.1.1.2016.002](http://doi.org/10.5880/GFZ.1.1.2016.002 )
